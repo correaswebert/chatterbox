@@ -26,14 +26,14 @@ io.on("connect", (socket) => {
     // notify the user
     socket.emit("incoming message", {
       user: "admin",
-      type: "text",
+      type: "notification",
       payload: `You have joined the chat`,
     });
 
     // notify the other participants of the group
     socket.broadcast.to(user.room).emit("incoming message", {
       user: "admin",
-      type: "text",
+      type: "notification",
       payload: `${user.name} has joined the chat`,
     });
 
@@ -62,7 +62,7 @@ io.on("connect", (socket) => {
     if (user) {
       io.to(user.room).emit("incoming message", {
         user: "Admin",
-        type: "text",
+        type: "notification",
         payload: `${user.name} has left the chat`,
       });
 

@@ -18,6 +18,10 @@ import EmojiEmotionsIcon from "@material-ui/icons/EmojiEmotions";
 import AttachFileIcon from "@material-ui/icons/AttachFile";
 import SendIcon from "@material-ui/icons/Send";
 import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import AddCircleOutlineIcon from "@material-ui/icons/AddCircleOutline";
+import GetAppRoundedIcon from "@material-ui/icons/GetAppRounded";
+import DoneIcon from "@material-ui/icons/Done";
+import DoneAllIcon from "@material-ui/icons/DoneAll";
 import defaultDP from "../images/defaultDP.svg";
 
 const useStyles = makeStyles((theme) => ({
@@ -44,6 +48,9 @@ const useStyles = makeStyles((theme) => ({
   },
   iconButton: {
     padding: 10,
+  },
+  timeStamp: {
+    float: "right",
   },
   divider: {
     height: 28,
@@ -117,11 +124,13 @@ const Chat = () => {
     <div className={classes.chatInfo}>
       <AppBar position="static">
         <Toolbar>
-          {/* BUG: import defaultDP */}
           <Avatar alt="DP" src={displayPicture || defaultDP} />
           <Typography variant="h6" className={classes.title}>
             {displayName}
           </Typography>
+
+          {/* display icons only for group chat */}
+          <AddCircleOutlineIcon />
           <ExitToAppIcon />
         </Toolbar>
       </AppBar>
@@ -130,18 +139,26 @@ const Chat = () => {
 
   const ChatBox = ({ messages }) => (
     <Paper>
-      {messages.map((message, i) => (
-        <div key={i}>
-          <Typography>
-            {/* check for type of payload, if binary, then just display type, otherwise display text */}
-            {message.type === "text" ? message.payload : message.type}
-          </Typography>
-          <div>
-            {message.time}
-            {/* double ticks icon (color decided by the received info) */}
+      {messages.map((message, i) => {
+        const { user, time, payload, type } = message;
+
+        return (
+          <div key={i}>
+            {/* this is a notification */}
+            <div>{user !== "admin" ? user : ""}</div>
+
+            <Typography>
+              {/* show message if text otherwise show download icon (with filename) */}
+              {type === "text" ? payload : type}
+            </Typography>
+
+            <div className={classes.timeStamp}>
+              {time}
+              {/* double ticks icon (only outgoing messages) */}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </Paper>
   );
 
@@ -163,7 +180,9 @@ const Chat = () => {
       <IconButton className={classes.iconButton} aria-label="attach">
         <AttachFileIcon />
       </IconButton>
+
       <Divider className={classes.divider} orientation="vertical" />
+
       <IconButton
         type="submit"
         color="primary"
