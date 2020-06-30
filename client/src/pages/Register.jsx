@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper, Input, Button, Container } from "@material-ui/core";
@@ -29,6 +29,7 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "0",
     padding: "15px 20px",
     width: "100%",
+    color: "white",
   },
 
   heading: {
@@ -48,6 +49,7 @@ const useStyles = makeStyles((theme) => ({
     display: "inline-block",
     border: "none",
     width: "100%",
+    marginTop: "2em",
   },
 }));
 
@@ -57,9 +59,9 @@ const Register = () => {
   const [phone, setPhone] = useState("");
 
   return (
-    <Container className={classes.outerContainer}>
+    <div className={classes.outerContainer}>
       <Container className={classes.innerContainer}>
-        <h1 className={classes.heading}>Join</h1>
+        <h1 className={classes.heading}>Register</h1>
         <div>
           <Input
             placeholder="Name"
@@ -91,7 +93,7 @@ const Register = () => {
           </Button>
         </Link>
       </Container>
-    </Container>
+    </div>
   );
 };
 

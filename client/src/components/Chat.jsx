@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from "react";
-
-import queryString from "query-string";
+import React, { useEffect, useState, useRef } from "react";
+// import queryString from "query-string";
 import io from "socket.io-client";
-
 import { makeStyles } from "@material-ui/core/styles";
 import {
   Paper,
@@ -18,11 +16,13 @@ import EmojiEmotionsIcon from "@material-ui/icons/EmojiEmotions";
 import AttachFileIcon from "@material-ui/icons/AttachFile";
 import SendIcon from "@material-ui/icons/Send";
 import ExitToAppIcon from "@material-ui/icons/ExitToApp";
-import AddCircleOutlineIcon from "@material-ui/icons/AddCircleOutline";
+import PersonAddIcon from "@material-ui/icons/PersonAdd";
 import GetAppRoundedIcon from "@material-ui/icons/GetAppRounded";
 import DoneIcon from "@material-ui/icons/Done";
 import DoneAllIcon from "@material-ui/icons/DoneAll";
 import defaultDP from "../images/defaultDP.svg";
+
+import "../utils/socketClient";
 
 const useStyles = makeStyles((theme) => ({
   chatInfo: {
@@ -32,6 +32,13 @@ const useStyles = makeStyles((theme) => ({
   title: {
     marginLeft: theme.spacing(1),
     flexGrow: 1,
+  },
+
+  chatBox: {
+    maxWidth: "30em",
+    marginTop: "1em",
+    marginLeft: "1em",
+    padding: "1em",
   },
 
   form: {
@@ -59,11 +66,11 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 let socket; // will be initialised every time we change the connection (group or chat)
-const Chat = () => {
+const Chat = ({ location }) => {
   const classes = useStyles();
 
   const [name, setName] = useState(""); // if single person
-  const [room, setRoom] = useState(""); // if group chat
+  const [chat, setChat] = useState(""); // if group chat
   const [users, setUsers] = useState(""); // if group chat
   const date = new Date();
 
@@ -71,21 +78,23 @@ const Chat = () => {
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
   const ENDPOINT = "localhost:5000"; // where the server is connected
 
+  let socket = useRef();
+
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
   useEffect(() => {
     // in case of single person, the room name will be replaced by other party's name
-    // const { name, room } = queryString.parse(location.search);
-    const name = "swebert";
-    const room = "swebert";
+    // const { name, chat } = queryString.parse(location.search);
+    const name = "Swebert" + date.getTime();
+    const chat = "Swebert";
 
-    socket = io(ENDPOINT);
+    socket.current = io(ENDPOINT);
 
-    setRoom(room);
-    setName(name);
+    setChat("Swebert");
+    setName("Swebert");
 
     // user has joined a room
-    socket.emit("join", { name, room, time: date.getMinutes() }, (error) => {
+    socket.current.emit("join", { name, chat, time: date.getMinutes() }, (error) => {
       if (error) {
         alert(error);
       }
@@ -93,17 +102,22 @@ const Chat = () => {
   }, [ENDPOINT /* , location.search */]);
 
   useEffect(() => {
-    socket.on("incoming message", (message) => {
+    socket.current.on("incoming message", (message) => {
       setMessages((messages) => [...messages, message]);
+
+      // DEBUG
       console.log(messages);
+
+      // store messages as history (to be retrieved later)
+      localStorage.setItem("messages", messages.toString());
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
-      socket.emit("received message", message.time);
+      socket.current.emit("received message", message.time);
     });
 
     // in case of group chat, add the new user to the local DB
-    socket.on("roomData", ({ users }) => {
+    socket.current.on("roomData", ({ users }) => {
       setUsers(users);
     });
   }, []);
@@ -112,7 +126,7 @@ const Chat = () => {
     event.preventDefault();
 
     if (message) {
-      socket.emit(
+      socket.current.emit(
         "send message",
         { type: "text", payload: message, time: date.getTime() },
         () => setMessage("")
@@ -130,37 +144,34 @@ const Chat = () => {
           </Typography>
 
           {/* display icons only for group chat */}
-          <AddCircleOutlineIcon />
+          <PersonAddIcon />
           <ExitToAppIcon />
         </Toolbar>
       </AppBar>
     </div>
   );
 
-  const ChatBox = ({ messages }) => (
-    <Paper>
-      {messages.map((message, i) => {
-        const { user, time, payload, type } = message;
+  const ChatBox = ({ messages }) =>
+    messages.map((message, i) => {
+      const { user, time, payload, type } = message;
 
-        return (
-          <div key={i}>
-            {/* this is a notification */}
-            <div>{user !== "admin" ? user : ""}</div>
+      return (
+        <Paper key={i} className={classes.chatBox}>
+          {/* this is a notification */}
+          <div>{user !== "admin" ? user : ""}</div>
 
-            <Typography>
-              {/* show message if text otherwise show download icon (with filename) */}
-              {type === "text" ? payload : type}
-            </Typography>
+          <Typography>
+            {/* show message if text otherwise show download icon (with filename) */}
+            {type === "text" ? payload : type}
+          </Typography>
 
-            <div className={classes.timeStamp}>
-              {time}
-              {/* double ticks icon (only outgoing messages) */}
-            </div>
+          <div className={classes.timeStamp}>
+            {time}
+            {/* double ticks icon (only outgoing messages) */}
           </div>
-        );
-      })}
-    </Paper>
-  );
+        </Paper>
+      );
+    });
 
   const MessageBox = () => (
     <Paper component="form" className={classes.form}>
@@ -174,7 +185,9 @@ const Chat = () => {
         inputProps={{ "aria-label": "type a message" }}
         value={message}
         onChange={({ target: { value } }) => setMessage(value)}
-        onKeyPress={(event) => (event.key === "Enter" ? sendMessage(event) : null)}
+        onKeyPress={(event) => {
+          if (event.key === "Enter") return sendMessage(event);
+        }}
       />
 
       <IconButton className={classes.iconButton} aria-label="attach">
