@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 // import queryString from "query-string";
 import io from "socket.io-client";
+import PropTypes from "prop-types";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   Paper,
@@ -11,6 +12,7 @@ import {
   Toolbar,
   Typography,
   Avatar,
+  ListItem,
 } from "@material-ui/core";
 import EmojiEmotionsIcon from "@material-ui/icons/EmojiEmotions";
 import AttachFileIcon from "@material-ui/icons/AttachFile";
@@ -21,8 +23,9 @@ import GetAppRoundedIcon from "@material-ui/icons/GetAppRounded";
 import DoneIcon from "@material-ui/icons/Done";
 import DoneAllIcon from "@material-ui/icons/DoneAll";
 import defaultDP from "../images/defaultDP.svg";
+import { FixedSizeList } from "react-window";
 
-import "../utils/socketClient";
+// import * as utils from "../utils/socketClient";
 
 const useStyles = makeStyles((theme) => ({
   chatInfo: {
@@ -34,11 +37,24 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
   },
 
+  chatHistory: {
+    width: "100%",
+    height: 400,
+    maxWidth: 300,
+    backgroundColor: theme.palette.background.paper,
+  },
   chatBox: {
     maxWidth: "30em",
     marginTop: "1em",
     marginLeft: "1em",
     padding: "1em",
+  },
+  name: {
+    marginBottom: "0.5em",
+  },
+  timeStamp: {
+    justifyContent: "flex-end",
+    marginTop: "0.5em",
   },
 
   form: {
@@ -55,9 +71,6 @@ const useStyles = makeStyles((theme) => ({
   },
   iconButton: {
     padding: 10,
-  },
-  timeStamp: {
-    float: "right",
   },
   divider: {
     height: 28,
@@ -78,7 +91,7 @@ const Chat = ({ location }) => {
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
   const ENDPOINT = "localhost:5000"; // where the server is connected
 
-  let socket = useRef();
+  let socket = useRef(io(ENDPOINT));
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
@@ -88,13 +101,13 @@ const Chat = ({ location }) => {
     const name = "Swebert" + date.getTime();
     const chat = "Swebert";
 
-    socket.current = io(ENDPOINT);
+    // socket.current = io(ENDPOINT);
 
     setChat("Swebert");
-    setName("Swebert");
+    setName("Swebert" + date.getTime());
 
     // user has joined a room
-    socket.current.emit("join", { name, chat, time: date.getMinutes() }, (error) => {
+    socket.current.emit("join", { name, chat, time: date.getTime() }, (error) => {
       if (error) {
         alert(error);
       }
@@ -109,7 +122,7 @@ const Chat = ({ location }) => {
       console.log(messages);
 
       // store messages as history (to be retrieved later)
-      localStorage.setItem("messages", messages.toString());
+      // localStorage.setItem("messages", messages.toString());
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
@@ -120,7 +133,7 @@ const Chat = ({ location }) => {
     socket.current.on("roomData", ({ users }) => {
       setUsers(users);
     });
-  }, []);
+  }, [messages]);
 
   const sendMessage = (event) => {
     event.preventDefault();
@@ -128,10 +141,50 @@ const Chat = ({ location }) => {
     if (message) {
       socket.current.emit(
         "send message",
-        { type: "text", payload: message, time: date.getTime() },
+        {
+          user: name,
+          type: "text",
+          payload: message,
+          time: date.getTime(),
+          incoming: false,
+        },
         () => setMessage("")
       );
     }
+  };
+
+  // https://github.com/bvaughn/react-window
+  // some links in the README for lazy loading the list data too!
+  function renderRow(props) {
+    const { index, style, message } = props;
+    const { user, time, payload, type, incoming } = message;
+    console.log(message);
+
+    return (
+      <ListItem button style={style} key={index}>
+        <Paper className={classes.chatBox}>
+          {/* this is a notification */}
+          <div className={classes.name}>{user !== "admin" ? user : null}</div>
+
+          <Typography>
+            {/* show message if text otherwise show download icon (with filename) */}
+            {type === "text" || type === "notification" ? payload : type}
+            {/* {if(true) return null} */}
+          </Typography>
+
+          <div className={classes.timeStamp}>
+            {time}
+            {incoming ? null : <DoneIcon />}
+          </div>
+        </Paper>
+      </ListItem>
+    );
+  }
+
+  renderRow.propTypes = {
+    index: PropTypes.number.isRequired,
+    style: PropTypes.object.isRequired,
+    message: PropTypes.object.isRequired,
   };
 
   const ChatInfo = ({ displayName, displayPicture }) => (
@@ -153,25 +206,36 @@ const Chat = ({ location }) => {
 
   const ChatBox = ({ messages }) =>
     messages.map((message, i) => {
-      const { user, time, payload, type } = message;
+      const { user, time, payload, type, incoming } = message;
+      console.log(message);
 
       return (
         <Paper key={i} className={classes.chatBox}>
           {/* this is a notification */}
-          <div>{user !== "admin" ? user : ""}</div>
+          <div className={classes.name}>{user !== "admin" ? user : null}</div>
 
           <Typography>
             {/* show message if text otherwise show download icon (with filename) */}
-            {type === "text" ? payload : type}
+            {type === "text" || type === "notification" ? payload : type}
+            {/* {if(true) return null} */}
           </Typography>
 
           <div className={classes.timeStamp}>
             {time}
-            {/* double ticks icon (only outgoing messages) */}
+            {incoming ? null : <DoneIcon />}
           </div>
         </Paper>
       );
     });
+
+  // update the itemCount every time a new chat is added
+  const ChatHistory = () => (
+    <div className={classes.chatHistory}>
+      <FixedSizeList height={400} width={300} itemSize={46} itemCount={200}>
+        {renderRow}
+      </FixedSizeList>
+    </div>
+  );
 
   const MessageBox = () => (
     <Paper component="form" className={classes.form}>

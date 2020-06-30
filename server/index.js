@@ -28,6 +28,7 @@ io.on("connect", (socket) => {
       user: "admin",
       type: "notification",
       payload: `You have joined the chat`,
+      incoming: true,
     });
 
     // notify the other participants of the group
@@ -35,6 +36,7 @@ io.on("connect", (socket) => {
       user: "admin",
       type: "notification",
       payload: `${user.name} has joined the chat`,
+      incoming: true,
     });
 
     // send the updated participant list
@@ -51,7 +53,7 @@ io.on("connect", (socket) => {
   socket.on("send message", (message, callback) => {
     const user = getUser(socket.id);
 
-    io.to(user.chat).emit("incoming message", { ...message, user: user.name });
+    io.to(user.chat).emit("incoming message", { ...message, incoming: true });
 
     callback();
   });
@@ -61,9 +63,10 @@ io.on("connect", (socket) => {
 
     if (user) {
       io.to(user.chat).emit("incoming message", {
-        user: "Admin",
+        user: "admin",
         type: "notification",
         payload: `${user.name} has left the chat`,
+        incoming: true,
       });
 
       // again instead of sending updated list, client-side could use above name to remove from their participant list
