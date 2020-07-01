@@ -134,7 +134,7 @@ const Chat = ({ location }) => {
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
-      socket.current.emit("received message", message.time);
+      socket.current.emit("received message", { user: phone, time: message.time });
     });
 
     // in case of group chat, add the new user to the local DB
@@ -159,6 +159,16 @@ const Chat = ({ location }) => {
         () => setMessage("")
       );
     }
+  };
+
+  const formatTime = (time) => {
+    console.log("Time: " + time);
+    time %= 86400000;
+    let ss = Math.floor(time / 1000);
+    let mm = Math.floor(ss / 60);
+    let hh = Math.floor(mm / 24);
+
+    return `${hh}:${mm % 60}:${ss % 60}`;
   };
 
   // https://github.com/bvaughn/react-window
@@ -229,7 +239,7 @@ const Chat = ({ location }) => {
           </Typography>
 
           <div className={classes.timeStamp}>
-            {time}
+            {user !== "admin" ? formatTime(time) : null}
             {incoming ? null : <DoneIcon />}
           </div>
         </Paper>
@@ -245,7 +255,7 @@ const Chat = ({ location }) => {
     </div>
   );
 
-  const MessageBox = () => (
+  const MessageInput = () => (
     <Paper component="form" className={classes.form}>
       <IconButton className={classes.iconButton} aria-label="menu">
         <EmojiEmotionsIcon />
@@ -288,7 +298,7 @@ const Chat = ({ location }) => {
       <div className={classes.root}>
         <ChatInfo displayName={"placeholder"} />
         <ChatBox messages={messages} />
-        <MessageBox />
+        <MessageInput />
       </div>
     )
   );

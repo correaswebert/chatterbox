@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper, Input, Button, Container } from "@material-ui/core";
@@ -60,19 +60,30 @@ const Register = () => {
   const [phone, setPhone] = useState(0);
 
   const saveCredentials = () => {
-    const user = {
+    const userIdentification = {
       name: name,
       phone: phone,
       // avatar: avatar,
     };
 
-    axios.post(`http://127.0.0.1:5000/register`, { user }).then((res) => {
-      console.log("Response: " + res);
-      console.log(res.data);
-    });
+    axios
+      .post(`http://127.0.0.1:5000/register`, { userIdentification })
+      .then((res) => {
+        if (res.data !== "OK") {
+          alert("Phone is already registered!");
+          return false;
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        return false;
+      });
 
     localStorage.setItem("name", name);
     localStorage.setItem("phone", phone);
+    console.log("OK"); // DEBUG
+
+    return true;
   };
 
   return (
@@ -100,10 +111,8 @@ const Register = () => {
         <div>{/* input button to get image */}</div>
 
         {/* convert this into a POST request from GET request */}
-        <Link onClick={(e) => (!name || !phone ? e.preventDefault() : null)} to="/">
-          <Button className={classes.button} onClick={saveCredentials}>
-            Register
-          </Button>
+        <Link onClick={(e) => (saveCredentials() ? null : e.preventDefault())} to="/">
+          <Button className={classes.button}>Register</Button>
         </Link>
       </Container>
     </div>

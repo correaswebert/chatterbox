@@ -6,13 +6,13 @@ router.get("/", (req, res) => {
 });
 
 router.post("/register", (req, res) => {
-  console.log(req);
-  // const name = req.body.name;
-  // const phone = req.body.phone;
-  // // const avatar = req.body.avatar;
+  // console.log(req);
+  const name = req.body.userIdentification.name;
+  const phone = req.body.userIdentification.phone;
+  // const avatar = req.body.userIdentification.avatar;
 
-  // // check if phone exists in DB
-  // console.log(`name: ${name}, phone: ${phone}`);
+  // check if phone exists in DB
+  console.log(`name: ${name}, phone: ${phone}`);
   res.send("OK").status(200);
 });
 

@@ -11,6 +11,7 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 app.use(cors());
+app.use(express.json());
 app.use(router);
 
 // socket is created
