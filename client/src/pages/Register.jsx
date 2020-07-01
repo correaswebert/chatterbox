@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper, Input, Button, Container } from "@material-ui/core";
 
@@ -56,7 +57,23 @@ const useStyles = makeStyles((theme) => ({
 const Register = () => {
   const classes = useStyles();
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(0);
+
+  const saveCredentials = () => {
+    const user = {
+      name: name,
+      phone: phone,
+      // avatar: avatar,
+    };
+
+    axios.post(`http://127.0.0.1:5000/register`, { user }).then((res) => {
+      console.log("Response: " + res);
+      console.log(res.data);
+    });
+
+    localStorage.setItem("name", name);
+    localStorage.setItem("phone", phone);
+  };
 
   return (
     <div className={classes.outerContainer}>
@@ -75,7 +92,7 @@ const Register = () => {
           <Input
             placeholder="Phone number"
             className={classes.input}
-            type="text"
+            type="number"
             onChange={(event) => setPhone(event.target.value)}
           />
         </div>
@@ -83,12 +100,8 @@ const Register = () => {
         <div>{/* input button to get image */}</div>
 
         {/* convert this into a POST request from GET request */}
-        <Link
-          // BUG: instead of null, update localStorage with provided info
-          onClick={(e) => (!name || !phone ? e.preventDefault() : null)}
-          to={`/chat?name=${name}&phone=${phone}`}
-        >
-          <Button className={classes.button} type="submit">
+        <Link onClick={(e) => (!name || !phone ? e.preventDefault() : null)} to="/">
+          <Button className={classes.button} onClick={saveCredentials}>
             Register
           </Button>
         </Link>

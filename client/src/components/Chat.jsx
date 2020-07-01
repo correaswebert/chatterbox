@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Redirect } from "react-router-dom";
 // import queryString from "query-string";
 import io from "socket.io-client";
 import PropTypes from "prop-types";
@@ -79,10 +80,12 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 let socket; // will be initialised every time we change the connection (group or chat)
+
 const Chat = ({ location }) => {
   const classes = useStyles();
 
   const [name, setName] = useState(""); // if single person
+  const [phone, setPhone] = useState("");
   const [chat, setChat] = useState(""); // if group chat
   const [users, setUsers] = useState(""); // if group chat
   const date = new Date();
@@ -91,27 +94,32 @@ const Chat = ({ location }) => {
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
   const ENDPOINT = "localhost:5000"; // where the server is connected
 
-  let socket = useRef(io(ENDPOINT));
+  socket = useRef();
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
   useEffect(() => {
     // in case of single person, the room name will be replaced by other party's name
     // const { name, chat } = queryString.parse(location.search);
-    const name = "Swebert" + date.getTime();
+    const name = localStorage.getItem("name");
     const chat = "Swebert";
 
-    // socket.current = io(ENDPOINT);
+    socket.current = io(ENDPOINT);
 
     setChat("Swebert");
-    setName("Swebert" + date.getTime());
+    setName(localStorage.getItem("name"));
+    setPhone(localStorage.getItem("phone"));
 
     // user has joined a room
-    socket.current.emit("join", { name, chat, time: date.getTime() }, (error) => {
-      if (error) {
-        alert(error);
+    socket.current.emit(
+      "join",
+      { name: name, chat: chat, phone: phone, time: date.getTime() },
+      (error) => {
+        if (error) {
+          alert(error);
+        }
       }
-    });
+    );
   }, [ENDPOINT /* , location.search */]);
 
   useEffect(() => {
@@ -119,7 +127,7 @@ const Chat = ({ location }) => {
       setMessages((messages) => [...messages, message]);
 
       // DEBUG
-      console.log(messages);
+      // console.log(messages);
 
       // store messages as history (to be retrieved later)
       // localStorage.setItem("messages", messages.toString());
@@ -158,7 +166,7 @@ const Chat = ({ location }) => {
   function renderRow(props) {
     const { index, style, message } = props;
     const { user, time, payload, type, incoming } = message;
-    console.log(message);
+    // console.log(message);
 
     return (
       <ListItem button style={style} key={index}>
@@ -207,7 +215,7 @@ const Chat = ({ location }) => {
   const ChatBox = ({ messages }) =>
     messages.map((message, i) => {
       const { user, time, payload, type, incoming } = message;
-      console.log(message);
+      // console.log(message);
 
       return (
         <Paper key={i} className={classes.chatBox}>
@@ -273,11 +281,16 @@ const Chat = ({ location }) => {
   );
 
   return (
-    <div className={classes.root}>
-      <ChatInfo displayName={"placeholder"} />
-      <ChatBox messages={messages} />
-      <MessageBox />
-    </div>
+    // personal phone number is stored in localStorage for verifying if user registered
+    !localStorage.getItem("phone") ? (
+      <Redirect to="/register" />
+    ) : (
+      <div className={classes.root}>
+        <ChatInfo displayName={"placeholder"} />
+        <ChatBox messages={messages} />
+        <MessageBox />
+      </div>
+    )
   );
 };
 
