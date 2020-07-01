@@ -3,7 +3,7 @@ const express = require("express");
 const socketio = require("socket.io");
 const cors = require("cors"); // useful once app is deployed
 
-const { addUser, removeUser, getUser, getUsersInChat } = require("./users");
+const { addUser, removeUser, getUser } = require("./users");
 const router = require("./router");
 
 const app = express();
@@ -13,6 +13,9 @@ const io = socketio(server);
 app.use(cors());
 app.use(express.json());
 app.use(router);
+
+// active users in group
+const users = [];
 
 // socket is created
 io.on("connect", (socket) => {
@@ -25,27 +28,22 @@ io.on("connect", (socket) => {
     console.log(`${name} has joined @ ${time}`);
 
     // notify the user
-    socket.emit("incoming message", {
+    socket.emit("notify", {
       user: "admin",
-      type: "notification",
+      type: "join",
       payload: `You have joined the chat`,
       incoming: true,
     });
 
-    // notify the other participants of the group
-    socket.broadcast.to(user.chat).emit("incoming message", {
-      user: "admin",
-      type: "notification",
+    // BUG: move this from here to router to DB js
+    users.push(user.phone);
+
+    // notify the others in group
+    socket.broadcast.to(user.chat).emit("notify", {
+      user: user.phone,
+      type: "join",
       payload: `${user.name} has joined the chat`,
       incoming: true,
-    });
-
-    // send the updated participant list
-    // FIX: instead of sending updated list, client-side should directly add the username using above notification
-    // the list should only be sent to the current user...
-    io.to(user.chat).emit("roomData", {
-      chat: user.chat,
-      users: getUsersInChat(user.chat),
     });
 
     callback();
@@ -56,27 +54,39 @@ io.on("connect", (socket) => {
 
     io.to(user.chat).emit("incoming message", { ...message, incoming: true });
 
+    console.log(message);
     callback();
   });
 
-  socket.on("disconnect", () => {
-    const user = removeUser(socket.id);
+  socket.on("join", (phone) => {
+    const index = users.indexOf(5);
+    if (index > -1) {
+      users.splice(index, 1);
 
-    if (user) {
-      io.to(user.chat).emit("incoming message", {
+      io.to(user.chat).emit("left notify", {
         user: "admin",
-        type: "notification",
+        type: "left",
         payload: `${user.name} has left the chat`,
         incoming: true,
       });
-
-      // again instead of sending updated list, client-side could use above name to remove from their participant list
-      io.to(user.chat).emit("roomData", {
-        chat: user.chat,
-        users: getUsersInChat(user.chat),
-      });
     }
   });
+
+  // user does not leave on socket disconnection
+  // user leaves on emitting 'leave group'
+
+  // socket.on("disconnect", () => {
+  //   const user = removeUser(socket.id);
+
+  //   if (user) {
+  //     io.to(user.chat).emit("notify", {
+  //       user: user.phone,
+  //       type: "left",
+  //       payload: `${user.name} has left the chat`,
+  //       incoming: true,
+  //     });
+  //   }
+  // });
 });
 
 server.listen(process.env.PORT || 5000, () => console.log(`Server has started.`));

@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Redirect } from "react-router-dom";
 // import queryString from "query-string";
-import io from "socket.io-client";
+// import io from "socket.io-client";
 import PropTypes from "prop-types";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   Paper,
   InputBase,
+  Input,
   Divider,
   IconButton,
   AppBar,
@@ -54,8 +55,10 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: "0.5em",
   },
   timeStamp: {
-    justifyContent: "flex-end",
-    marginTop: "0.5em",
+    float: "right",
+    marginTop: "-0.25em",
+    marginRight: "-0.75em",
+    color: "#a9a9a9",
   },
 
   form: {
@@ -79,51 +82,56 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-let socket; // will be initialised every time we change the connection (group or chat)
+// let socket; // will be initialised every time we change the connection (group or chat)
 
-const Chat = ({ location }) => {
+const Chat = ({ socket }) => {
   const classes = useStyles();
 
   const [name, setName] = useState(""); // if single person
   const [phone, setPhone] = useState("");
   const [chat, setChat] = useState(""); // if group chat
-  const [users, setUsers] = useState(""); // if group chat
+  const [users, setUsers] = useState([]); // if group chat
   const date = new Date();
 
   const [message, setMessage] = useState(""); // current one being written
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
-  const ENDPOINT = "localhost:5000"; // where the server is connected
+  // const ENDPOINT = "localhost:5000"; // where the server is connected
 
-  socket = useRef();
+  // socket = useRef();
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
-  useEffect(() => {
-    // in case of single person, the room name will be replaced by other party's name
-    // const { name, chat } = queryString.parse(location.search);
-    const name = localStorage.getItem("name");
-    const chat = "Swebert";
+  useEffect(
+    () => {
+      // in case of single person, the room name will be replaced by other party's name
+      // const { name, chat } = queryString.parse(location.search);
+      const name = localStorage.getItem("name");
+      const chat = "Swebert";
 
-    socket.current = io(ENDPOINT);
+      socket = io(ENDPOINT);
 
-    setChat("Swebert");
-    setName(localStorage.getItem("name"));
-    setPhone(localStorage.getItem("phone"));
+      setChat("Swebert");
+      setName(localStorage.getItem("name"));
+      setPhone(localStorage.getItem("phone"));
 
-    // user has joined a room
-    socket.current.emit(
-      "join",
-      { name: name, chat: chat, phone: phone, time: date.getTime() },
-      (error) => {
-        if (error) {
-          alert(error);
+      // user has joined a room
+      socket.emit(
+        "join group",
+        { group: chat, phone: phone, time: date.getTime() },
+        (error) => {
+          if (error) {
+            alert(error);
+          }
         }
-      }
-    );
-  }, [ENDPOINT /* , location.search */]);
+      );
+    },
+    [
+      /* ENDPOINT, location.search */
+    ]
+  );
 
   useEffect(() => {
-    socket.current.on("incoming message", (message) => {
+    socket.on("incoming group message", (message) => {
       setMessages((messages) => [...messages, message]);
 
       // DEBUG
@@ -134,21 +142,30 @@ const Chat = ({ location }) => {
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
-      socket.current.emit("received message", { user: phone, time: message.time });
+      socket.emit("received group message", { user: phone, time: message.time });
     });
 
     // in case of group chat, add the new user to the local DB
-    socket.current.on("roomData", ({ users }) => {
+    socket.on("roomData", ({ users }) => {
       setUsers(users);
     });
-  }, [messages]);
+  }, []);
+
+  socket.on("notify", ({ type, user }) => {});
+
+  const exitGroup = (groupId) => () => {
+    socket.emit("leave group", { groupId: groupId, phone: phone });
+    // render a blank screen now by redirecting...
+  };
 
   const sendMessage = (event) => {
     event.preventDefault();
+    setMessage(document.getElementById("message-input").value);
+    console.log("Message: " + document.getElementById("message-input").value);
 
     if (message) {
-      socket.current.emit(
-        "send message",
+      socket.emit(
+        "send group message",
         {
           user: name,
           type: "text",
@@ -162,7 +179,7 @@ const Chat = ({ location }) => {
   };
 
   const formatTime = (time) => {
-    console.log("Time: " + time);
+    // console.log("Time: " + time);
     time %= 86400000;
     let ss = Math.floor(time / 1000);
     let mm = Math.floor(ss / 60);
@@ -192,7 +209,7 @@ const Chat = ({ location }) => {
 
           <div className={classes.timeStamp}>
             {time}
-            {incoming ? null : <DoneIcon />}
+            {incoming ? null : <DoneIcon color="primary" />}
           </div>
         </Paper>
       </ListItem>
@@ -216,7 +233,7 @@ const Chat = ({ location }) => {
 
           {/* display icons only for group chat */}
           <PersonAddIcon />
-          <ExitToAppIcon />
+          <ExitToAppIcon onClick={exitGroup(groupId)} />
         </Toolbar>
       </AppBar>
     </div>
@@ -262,15 +279,23 @@ const Chat = ({ location }) => {
       </IconButton>
 
       <InputBase
+        id="message-input"
         className={classes.textBox}
         placeholder="Type a message..."
         inputProps={{ "aria-label": "type a message" }}
-        value={message}
-        onChange={({ target: { value } }) => setMessage(value)}
-        onKeyPress={(event) => {
-          if (event.key === "Enter") return sendMessage(event);
-        }}
       />
+      {/* 
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+          onKeyPress={(event) => {
+            if (event.key === "Enter") {
+              console.log(message);
+              return sendMessage(event);
+            }
+          }}
+        setMessage(event.target.value);
+        onChange={({ target: { value } }) => setMessage(value)}
+         /> */}
 
       <IconButton className={classes.iconButton} aria-label="attach">
         <AttachFileIcon />
