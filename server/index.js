@@ -17,9 +17,13 @@ app.use(router);
 // active users in group
 const users = [];
 
+// a temporary relationship between a phone number and socket.id
+// created on the join event, and deleted on the disconnect event
+const phone2socket = [];
+
 // socket is created
 io.on("connect", (socket) => {
-  socket.on("join", ({ name, chat, time }, callback) => {
+  socket.on("join group", ({ phone, group, time }, callback) => {
     const { error, user } = addUser({ id: socket.id, name, chat });
 
     if (error) return callback(error);
@@ -29,10 +33,9 @@ io.on("connect", (socket) => {
 
     // notify the user
     socket.emit("notify", {
-      user: "admin",
+      user: user.phone,
       type: "join",
       payload: `You have joined the chat`,
-      incoming: true,
     });
 
     // BUG: move this from here to router to DB js
@@ -43,31 +46,29 @@ io.on("connect", (socket) => {
       user: user.phone,
       type: "join",
       payload: `${user.name} has joined the chat`,
-      incoming: true,
     });
 
     callback();
   });
 
-  socket.on("send message", (message, callback) => {
+  socket.on("send group message", (message, callback) => {
     const user = getUser(socket.id);
 
-    io.to(user.chat).emit("incoming message", { ...message, incoming: true });
+    io.to(user.chat).emit("incoming group message", { ...message, incoming: true });
 
     console.log(message);
     callback();
   });
 
-  socket.on("join", (phone) => {
-    const index = users.indexOf(5);
+  socket.on("leave group", ({ phone, groupId }) => {
+    const index = users.indexOf(phone);
+
     if (index > -1) {
       users.splice(index, 1);
 
-      io.to(user.chat).emit("left notify", {
-        user: "admin",
+      socket.broadcast.to(user.chat).emit("notify", {
+        user: phone,
         type: "left",
-        payload: `${user.name} has left the chat`,
-        incoming: true,
       });
     }
   });
@@ -89,4 +90,5 @@ io.on("connect", (socket) => {
   // });
 });
 
-server.listen(process.env.PORT || 5000, () => console.log(`Server has started.`));
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Server has started @ PORT ${PORT}`));

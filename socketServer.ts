@@ -32,12 +32,14 @@ interface Group {
 
 interface Message {
     fromPhone: number
-    toPhone: number
-    name: string        // sender's name
+    fromName: string    // sender's name
+    toPhone: number     // if a personal message
+    groupId: string     // if a group message
     type: string        // text, audio, video, file
     payload: any        // actual data to be sent
     time: number        // time sent
     incoming: boolean
+    group: boolean
 }
 
 // this should be a database
@@ -48,7 +50,15 @@ function getSocketId(phone: number): string {
     return null
 }
 
+function getPhoneNumber(socketid: string): number {
+    // from the temporary database, get the phone number of the socket.id
+    return null
+}
+
 function createPhoneSocketRelation(phone: number, socketid: string) {
+    // in the temporary database, add these as a pair
+}
+function deletePhoneSocketRelation(phone: number, socketid: string) {
     // in the temporary database, add these as a pair
 }
 
@@ -56,25 +66,50 @@ function checkPendingMessages(phone: number): Message[] {
     return []
 }
 
+// add the message to the pending messages of phone
+function addToPendingMessages(message: Message, phone: number) {
+
+}
+
 function SocketHandler(io: SocketIO.Server) {
     io.on("connection", (socket) => {
 
         /* ------------------------- INITIALIZATION ------------------------- */
 
-        socket.on("created", (phone: number) => {
+        socket.on("online", (phone: number) => {
             createPhoneSocketRelation(phone, socket.id)
 
-            checkPendingMessages(phone)
+            // send the pending messages
+            const pendingMessages = checkPendingMessages(phone)
+            if (pendingMessages) {
+                socket.emit("pending incoming messages", pendingMessages)
+            }
+        })
+
+
+        /* ---------------------------- CLEANUP ---------------------------- */
+
+        socket.on("disconnect", () => {
+            const phone = getPhoneNumber(socket.id)
+            deletePhoneSocketRelation(phone, socket.id)
         })
 
 
         /* ----------------------- PERSONAL MESSAGING ----------------------- */
 
         socket.on("send personal message", (message: Message, callback) => {
-            const phone = message.toPhone
-            const sid = getSocketId(phone)  // receiver
+            const toPhone = message.toPhone
 
-            if (!sid) callback("Person does not use our");
+            // check if phone registered
+            if (!toPhone) callback({ error: "Person does not use our service" })
+
+            const sid = getSocketId(toPhone)  // receiver
+
+            // check if the receiver is online
+            if (!sid) {
+                addToPendingMessages(message, toPhone)
+                callback({ error: "Person offline" });
+            }
 
             // try to send the message
             socket.to(sid).emit("incoming personal message", { ...message, incoming: true });
@@ -156,10 +191,6 @@ function SocketHandler(io: SocketIO.Server) {
                 // });
             }
         });
-
-        // socket.on("disconnect", (phone) => {
-        //     // remove the phone2socket relationship
-        // });
     });
 }
 

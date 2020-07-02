@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import localForage from "localforage";
 import { Redirect } from "react-router-dom";
 import queryString from "query-string";
 import io from "socket.io-client";
@@ -82,6 +83,15 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// stores the message in the array referred by phone or groupId
+function storeMessage(message) {
+  const chatId = message.group ? message.groupId : message.phone;
+  localForage
+    .getItem(chatId)
+    .then((currMessages) => localForage.setItem(messageId, [...currMessages, message]))
+    .catch((err) => console.log(err));
+}
+
 // let socket; // will be initialised every time we change the connection (group or chat)
 
 const Chat = ({ socket }) => {
@@ -92,11 +102,11 @@ const Chat = ({ socket }) => {
   const [users, setUsers] = useState([]); // if group chat
   const date = new Date();
 
-  const [message, setMessage] = useState(""); // current one being written
+  const [payload, setPayload] = useState(""); // current one being written
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
   const ENDPOINT = "localhost:5000"; // where the server is connected
 
-  // socket = useRef();
+  // socket = io(ENDPOINT)
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
@@ -106,9 +116,17 @@ const Chat = ({ socket }) => {
       // const { name, chat } = queryString.parse(location.search);
       const chat = "Swebert";
 
-      socket = io(ENDPOINT);
+      // socket = io(ENDPOINT);
 
-      socket.emit("created", phone);
+      // can't use the connect event as we have to also pass parameters
+      // no idea how to do that currently
+
+      // Notify server you are online, check for pending messages
+      socket.emit("online", phone);
+
+      socket.on("pending incoming messages", (messages) => {
+        messages.forEach(storeMessage(message));
+      });
 
       setChat("Swebert");
       setPhone(localStorage.getItem("phone"));
@@ -136,17 +154,11 @@ const Chat = ({ socket }) => {
       // DEBUG
       // console.log(messages);
 
-      // store messages as history (to be retrieved later)
-      // localStorage.setItem("messages", messages.toString());
+      storeMessage(message);
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
       socket.emit("received group message", { user: phone, time: message.time });
-    });
-
-    // in case of group chat, add the new user to the local DB
-    socket.on("roomData", ({ users }) => {
-      setUsers(users);
     });
   }, []);
 
@@ -159,21 +171,34 @@ const Chat = ({ socket }) => {
 
   const sendMessage = (event) => {
     event.preventDefault();
-    setMessage(document.getElementById("message-input").value);
-    console.log("Message: " + document.getElementById("message-input").value);
 
-    if (message) {
-      socket.emit(
-        "send group message",
-        {
-          user: phone,
-          type: "text",
-          payload: message,
-          time: date.getTime(),
-          incoming: false,
-        },
-        () => setMessage("")
-      );
+    setPayload(document.getElementById("message-input").value);
+    console.log("Payload: " + document.getElementById("message-input").value);
+
+    if (payload) {
+      const message = {
+        fromPhone: phone,
+        // fromName:    // sender's (your) name
+        // toPhone      // in case of personal messages
+        // groupId:     // in case of group messages
+        type: "text",
+        payload: message,
+        time: date.getTime(),
+        incoming: false,
+        // group:
+      };
+
+      if (group) {
+        socket.emit("send group message", message, () => {
+          storeMessage(message);
+          setMessage("");
+        });
+      } else {
+        socket.emit("send personal message", message, () => {
+          storeMessage(message);
+          setMessage("");
+        });
+      }
     }
   };
 
