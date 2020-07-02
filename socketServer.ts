@@ -13,8 +13,15 @@ interface Person {
     avatar: any
 }
 
+interface GroupCreate {
+    name: string,
+    avatar: any,
+    timeCreated: number,
+    creator: Person,
+    participants: Person[],
+}
 interface Group {
-    id: number,
+    id: string,
     name: string,
     avatar: any,
     timeCreated: number,
@@ -41,8 +48,27 @@ function getSocketId(phone: number): string {
     return null
 }
 
-function PersonalChatHandler(io: SocketIO.Server) {
-    io.on("connect", (socket) => {
+function createPhoneSocketRelation(phone: number, socketid: string) {
+    // in the temporary database, add these as a pair
+}
+
+function checkPendingMessages(phone: number): Message[] {
+    return []
+}
+
+function SocketHandler(io: SocketIO.Server) {
+    io.on("connection", (socket) => {
+
+        /* ------------------------- INITIALIZATION ------------------------- */
+
+        socket.on("created", (phone: number) => {
+            createPhoneSocketRelation(phone, socket.id)
+
+            checkPendingMessages(phone)
+        })
+
+
+        /* ----------------------- PERSONAL MESSAGING ----------------------- */
 
         socket.on("send personal message", (message: Message, callback) => {
             const phone = message.toPhone
@@ -50,16 +76,33 @@ function PersonalChatHandler(io: SocketIO.Server) {
 
             if (!sid) callback("Person does not use our");
 
+            // try to send the message
             socket.to(sid).emit("incoming personal message", { ...message, incoming: true });
+
+            // ACK that message was received
+            socket.on("received personal message", () => {
+                // notify sender that message was delivered
+                socket.emit("delivered personal message")
+            })
         });
 
-    });
-}
 
-function GroupChatHandler(io: SocketIO.Server) {
-    io.on("connect", (socket) => {
-        socket.on("create group", () => {
+        /* ------------------------ GROUP MESSAGING ------------------------ */
 
+        socket.on("create group", (details: GroupCreate, callback) => {
+            const { name, avatar, timeCreated, creator, participants } = details
+
+            // create a new entry to the database of groups
+            // group id is the unique id assigned on creation of entry
+
+            const groupId = ''  // string id
+
+            // create another DB of group ids (for faster fetching)
+
+            participants.map((participant) => socket.join(groupId))
+
+            // notify all the members of the group about creation
+            io.to('/').emit("group created")
         })
 
         // this should be emitted (a group member adds new person)
@@ -120,4 +163,4 @@ function GroupChatHandler(io: SocketIO.Server) {
     });
 }
 
-module.exports = [GroupChatHandler, PersonalChatHandler]
+module.exports = [SocketHandler]

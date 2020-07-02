@@ -1,38 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { makeStyles } from "@material-ui/core/styles";
-import {
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Divider,
-  // Fab,
-} from "@material-ui/core";
-import PersonAddIcon from "@material-ui/icons/PersonAdd";
-import GroupAddIcon from "@material-ui/icons/GroupAdd";
-import logo from "../logo.svg";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    width: "30vw",
-    backgroundColor: theme.palette.background.paper,
-  },
-  fab: {
-    position: "absolute",
-    bottom: theme.spacing(2),
-    right: theme.spacing(2),
-  },
-}));
-
-const Conversations = ({ chats }) => {
-  const classes = useStyles();
-
-  // BUG: add functionality here
-  const newChat = () => {};
-  const newGroup = () => {};
-
+const ContactList = () => {
   return (
     <>
       <List className={classes.root}>
@@ -71,12 +39,8 @@ const Conversations = ({ chats }) => {
           );
         })}
       </List>
-
-      {/* <Fab aria-label="Add" className={classes.fab} color="primary">
-        <AddIcon />
-      </Fab> */}
     </>
   );
 };
 
-export default Conversations;
+export default ContactList;

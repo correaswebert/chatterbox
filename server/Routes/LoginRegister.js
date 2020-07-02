@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+// const LoginRegister = require("../Models/LoginRegister");
 
 router.get("/", (req, res) => {
   res.send({ response: "Server is up and running." }).status(200);
@@ -25,17 +26,7 @@ router.post("/login", (req, res) => {
   res.send({ error: null }).status(200);
 });
 
-router.post("/create-group", (req, res) => {
-  // save the name, avatar, creator, timeCreated, participants
-});
-
 module.exports = router;
-
-// const express = require("express");
-// const router = express.Router();
-// const mongoose = require("mongoose");
-// const Schema = mongoose.Schema;
-// const Meeting = require("../Models/Meeting");
 
 // router.post("/register", (req, res) => {
 //   const meeting = new Meeting({

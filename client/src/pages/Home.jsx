@@ -27,12 +27,11 @@ let socket = io(ENDPOINT);
 const Home = () => {
   const classes = useStyles();
 
-  const [phone, setPhone] = useState(localStorage.getItem("phone"));
-
   return (
     // personal phone number is stored in localStorage for verifying if user registered
+    // if not found (may be cache cleared) then redirect to login page
     !localStorage.getItem("phone") ? (
-      <Redirect to="/register" />
+      <Redirect to="/login" />
     ) : (
       <div className={classes.root}>
         <Conversations className={classes.conversations} chats={chats} />

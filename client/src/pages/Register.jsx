@@ -54,7 +54,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Register = () => {
+const Register = ({ login }) => {
   const classes = useStyles();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState(0);
@@ -67,10 +67,12 @@ const Register = () => {
     };
 
     axios
-      .post(`http://127.0.0.1:5000/register`, { userIdentification })
+      .post(`http://127.0.0.1:5000/${login ? "login" : "register"}`, {
+        userIdentification,
+      })
       .then((res) => {
-        if (res.data !== "OK") {
-          alert("Phone is already registered!");
+        if (!res.data.error) {
+          alert(res.data.error);
           return false;
         }
       })
@@ -108,9 +110,25 @@ const Register = () => {
           />
         </div>
 
-        <div>{/* input button to get image */}</div>
+        {/* <div>
+          {function readURL(input) {
+            if (input.files && input.files[0]) {
+              var reader = new FileReader();
 
-        {/* convert this into a POST request from GET request */}
+              reader.onload = function (e) {
+                document.getElementById("blah").src = e.target.result;
+              };
+
+              reader.readAsDataURL(input.files[0]); // convert to base64 string
+            }
+          }}
+
+          <form runat="server">
+            <input type="file" id="imgInp" />
+            <img id="blah" src="#" alt="your image" onChange={(e) => readURL(e)} />
+          </form>
+        </div> */}
+
         <Link onClick={(e) => (saveCredentials() ? null : e.preventDefault())} to="/">
           <Button className={classes.button}>Register</Button>
         </Link>

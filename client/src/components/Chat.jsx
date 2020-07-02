@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Redirect } from "react-router-dom";
-// import queryString from "query-string";
-// import io from "socket.io-client";
+import queryString from "query-string";
+import io from "socket.io-client";
 import PropTypes from "prop-types";
 import { makeStyles } from "@material-ui/core/styles";
 import {
@@ -87,7 +87,6 @@ const useStyles = makeStyles((theme) => ({
 const Chat = ({ socket }) => {
   const classes = useStyles();
 
-  const [name, setName] = useState(""); // if single person
   const [phone, setPhone] = useState("");
   const [chat, setChat] = useState(""); // if group chat
   const [users, setUsers] = useState([]); // if group chat
@@ -95,7 +94,7 @@ const Chat = ({ socket }) => {
 
   const [message, setMessage] = useState(""); // current one being written
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
-  // const ENDPOINT = "localhost:5000"; // where the server is connected
+  const ENDPOINT = "localhost:5000"; // where the server is connected
 
   // socket = useRef();
 
@@ -105,13 +104,13 @@ const Chat = ({ socket }) => {
     () => {
       // in case of single person, the room name will be replaced by other party's name
       // const { name, chat } = queryString.parse(location.search);
-      const name = localStorage.getItem("name");
       const chat = "Swebert";
 
       socket = io(ENDPOINT);
 
+      socket.emit("created", phone);
+
       setChat("Swebert");
-      setName(localStorage.getItem("name"));
       setPhone(localStorage.getItem("phone"));
 
       // user has joined a room
@@ -154,7 +153,7 @@ const Chat = ({ socket }) => {
   socket.on("notify", ({ type, user }) => {});
 
   const exitGroup = (groupId) => () => {
-    socket.emit("leave group", { groupId: groupId, phone: phone });
+    socket.emit("leave group", { groupId, phone: phone });
     // render a blank screen now by redirecting...
   };
 
@@ -167,7 +166,7 @@ const Chat = ({ socket }) => {
       socket.emit(
         "send group message",
         {
-          user: name,
+          user: phone,
           type: "text",
           payload: message,
           time: date.getTime(),
@@ -233,7 +232,7 @@ const Chat = ({ socket }) => {
 
           {/* display icons only for group chat */}
           <PersonAddIcon />
-          <ExitToAppIcon onClick={exitGroup(groupId)} />
+          <ExitToAppIcon onClick={exitGroup(null)} />
         </Toolbar>
       </AppBar>
     </div>
