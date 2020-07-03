@@ -1,5 +1,6 @@
 const socketio = require("socket.io");
 const { addUser, removeUser, getUser } = require("./users");
+const PhoneSocket = require("../Models/PhoneSocket");
 
 interface GroupJoin {
     phone: number,
@@ -10,7 +11,7 @@ interface GroupJoin {
 interface Person {
     phone: number
     name: string
-    avatar: any
+    avatar?: any
 }
 
 interface GroupCreate {
@@ -33,8 +34,8 @@ interface Group {
 interface Message {
     fromPhone: number
     fromName: string    // sender's name
-    toPhone: number     // if a personal message
-    groupId: string     // if a group message
+    toPhone?: number    // if a personal message
+    groupId?: string    // if a group message
     type: string        // text, audio, video, file
     payload: any        // actual data to be sent
     time: number        // time sent
@@ -45,18 +46,22 @@ interface Message {
 // this should be a database
 const users: number[] = []
 
-function getSocketId(phone: number): string {
+function getSocketFromPhone(phone: number): string {
     // from the temporary database, get the socket.id of the phone number
     return null
 }
 
-function getPhoneNumber(socketid: string): number {
+function getPhoneFromSocket(socketid: string): number {
     // from the temporary database, get the phone number of the socket.id
     return null
 }
 
-function createPhoneSocketRelation(phone: number, socketid: string) {
-    // in the temporary database, add these as a pair
+function createPhoneSocketRelation(phone: number, socket_id: string) {
+    const phone_socket = new PhoneSocket({
+        phone, socket_id
+    });
+
+    phone_socket.save();
 }
 function deletePhoneSocketRelation(phone: number, socketid: string) {
     // in the temporary database, add these as a pair
@@ -90,7 +95,7 @@ function SocketHandler(io: SocketIO.Server) {
         /* ---------------------------- CLEANUP ---------------------------- */
 
         socket.on("disconnect", () => {
-            const phone = getPhoneNumber(socket.id)
+            const phone = getPhoneFromSocket(socket.id)
             deletePhoneSocketRelation(phone, socket.id)
         })
 
@@ -99,27 +104,22 @@ function SocketHandler(io: SocketIO.Server) {
 
         socket.on("send personal message", (message: Message, callback) => {
             const toPhone = message.toPhone
+            const sid = getSocketFromPhone(toPhone)  // receiver
 
-            // check if phone registered
-            if (!toPhone) callback({ error: "Person does not use our service" })
-
-            const sid = getSocketId(toPhone)  // receiver
-
-            // check if the receiver is online
             if (!sid) {
+                // receiver is offline, add to his pending messages stash
                 addToPendingMessages(message, toPhone)
-                callback({ error: "Person offline" });
+            } else {
+                socket.to(sid).emit("incoming personal message", { ...message, incoming: true });
+                callback();
             }
-
-            // try to send the message
-            socket.to(sid).emit("incoming personal message", { ...message, incoming: true });
-
-            // ACK that message was received
-            socket.on("received personal message", () => {
-                // notify sender that message was delivered
-                socket.emit("delivered personal message")
-            })
         });
+
+        // ACK that message was received
+        socket.on("received personal message", ({ toPhone, time }: Message) => {
+            // notify sender that message was delivered
+            socket.emit("delivered personal message", { toPhone, time })
+        })
 
 
         /* ------------------------ GROUP MESSAGING ------------------------ */
@@ -134,10 +134,29 @@ function SocketHandler(io: SocketIO.Server) {
 
             // create another DB of group ids (for faster fetching)
 
-            participants.map((participant) => socket.join(groupId))
+            participants.forEach((participant) => {
+                // BUG:
+                // get socket from participants phone
+                // const psocket = getSocketFromPhone(participant.phone)
+                // join above socket to group
+                // psocket.join(groupId)    // does not work
+            })
 
             // notify all the members of the group about creation
-            io.to('/').emit("group created")
+            io.to(groupId).emit("added to group", {
+                groupId,
+                name,
+                avatar,
+                timeCreated,
+                creator,
+                participants,
+                admins: [creator],
+            })
+        })
+
+        socket.on("received group message", ({ groupId, phone, time }) => {
+            // person has gotten the message (double ticks)
+            socket.broadcast.to(groupId).emit("delivered group message", { phone, time })
         })
 
         // this should be emitted (a group member adds new person)

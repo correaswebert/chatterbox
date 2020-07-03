@@ -1,62 +1,75 @@
 const express = require("express");
 const router = express.Router();
-// const LoginRegister = require("../Models/LoginRegister");
-
-router.get("/", (req, res) => {
-  res.send({ response: "Server is up and running." }).status(200);
-});
+const Person = require("../Models/Person");
 
 router.post("/register", (req, res) => {
   // console.log(req);
-  const name = req.body.userIdentification.name;
-  const phone = req.body.userIdentification.phone;
-  // const avatar = req.body.userIdentification.avatar;
+
+  // FIX: add avatar once implemented
+  const { name, phone } = req.body.userIdentification;
+
+  const person = new Person({
+    name: name,
+    phone: phone,
+    // avatar: avatar,
+  });
 
   // check if phone exists in DB
+  Person.findOne({ phone: phone }, (err, saved_person) => {
+    if (err)
+      return res.status(200).send({
+        error: err,
+        success: false,
+      });
+
+    // // DEBUG
+    // console.log(saved_person);
+
+    if (saved_person) {
+      return res.status(200).send({
+        error: "Phone number already registered",
+        success: false,
+      });
+    }
+
+    person.save((err, p) => {
+      res.status(200).send({
+        message: "Phone number successfully registered",
+        success: true,
+      });
+    });
+  });
+
+  // DEBUG
   console.log(`name: ${name}, phone: ${phone}`);
-  res.send({ error: null }).status(200);
 });
 
 router.post("/login", (req, res) => {
   const phone = req.body.registeredMobileNumber;
 
-  // check if RMN in DB
+  // check if phone exists in DB
+  Person.findOne({ phone: phone }, (err, saved_person) => {
+    if (err)
+      return res.status(200).send({
+        error: err,
+        success: false,
+      });
 
-  // send appropriate response
-  res.send({ error: null }).status(200);
+    // // DEBUG
+    // console.log(p);
+
+    if (saved_person) {
+      return res.status(200).send({
+        message: "Logged in successfully",
+        success: true,
+      });
+    }
+
+    res.status(200).send({
+      error: "Phone number not registered",
+      success: false,
+    });
+  });
 });
 
 module.exports = router;
-
-// router.post("/register", (req, res) => {
-//   const meeting = new Meeting({
-//     meeting_name: req.body.meeting_name,
-//     password: req.body.password,
-//     meeting_time: req.body.meeting_time
-//   });
-
-//   Meeting.findOne({ meeting_name: req.body.meeting_name }).then(meet => {
-//     console.log(meet);
-//     if (meet) {
-//       return res.status(402).send({
-//         error: "Meeting name already exists",
-//         isSuccess: false
-//       });
-//     } else {
-//       meeting
-//         .save()
-//         .then(res => {
-//           res.status(200).send({
-//             msg: "Meeting successfully created",
-//             isSuccess: true
-//           });
-//         })
-//         .catch(err => {
-//           res.status(402).send({
-//             error: err,
-//             isSuccess: false
-//           });
-//         });
-//     }
-//   });
-// });

@@ -21,23 +21,38 @@ const chats = [
   { name: "swebert correa", extract: "..." },
 ];
 
-const ENDPOINT = "http://127:0.0.1:5000";
-let socket = io(ENDPOINT);
-
-const Home = () => {
+const Home = ({ phone, name }) => {
   const classes = useStyles();
 
+  // user's essential details
+  const userDetails = {
+    socket: io("http://127:0.0.1:5000"),
+    phone: localForage.getItem("phone"),
+    name: localForage.getItem("name"),
+  };
+
+  // Notify server you are online and check for pending messages
+  socket.emit("online", phone);
+
+  socket.on("pending incoming messages", (messages) => {
+    messages.forEach((message) => {
+      storeMessage(message);
+
+      // ACK that message was received
+      if (message.group) {
+        const { groupId, time } = message;
+        socket.emit("received group message", { groupId, phone, time });
+      } else {
+        socket.emit("received personal message", { toPhone: phone, time: message.time });
+      }
+    });
+  });
+
   return (
-    // personal phone number is stored in localStorage for verifying if user registered
-    // if not found (may be cache cleared) then redirect to login page
-    !localStorage.getItem("phone") ? (
-      <Redirect to="/login" />
-    ) : (
-      <div className={classes.root}>
-        <Conversations className={classes.conversations} chats={chats} />
-        <Chat socket={socket} />
-      </div>
-    )
+    <div className={classes.root}>
+      <Conversations className={classes.conversations} chats={chats} />
+      <Chat {...userDetails} /> {/* also need to pass chatId */}
+    </div>
   );
 };
 

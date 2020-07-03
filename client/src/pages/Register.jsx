@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, Redirect } from "react-router-dom";
 import axios from "axios";
 import { makeStyles } from "@material-ui/core/styles";
-import { Paper, Input, Button, Container } from "@material-ui/core";
+import { Input, Button, Container } from "@material-ui/core";
+import localForage from "localforage";
 
 const useStyles = makeStyles((theme) => ({
   form: {
@@ -56,6 +57,7 @@ const useStyles = makeStyles((theme) => ({
 
 const Register = ({ login }) => {
   const classes = useStyles();
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState(0);
 
@@ -71,9 +73,10 @@ const Register = ({ login }) => {
         userIdentification,
       })
       .then((res) => {
-        if (!res.data.error) {
+        if (!res.data.success) {
           alert(res.data.error);
-          return false;
+
+          return login ? <Redirect to="/register" /> : false;
         }
       })
       .catch((err) => {
@@ -81,8 +84,8 @@ const Register = ({ login }) => {
         return false;
       });
 
-    localStorage.setItem("name", name);
-    localStorage.setItem("phone", phone);
+    localForage.setItem("name", name);
+    localForage.setItem("phone", phone);
     console.log("OK"); // DEBUG
 
     return true;
@@ -129,7 +132,7 @@ const Register = ({ login }) => {
           </form>
         </div> */}
 
-        <Link onClick={(e) => (saveCredentials() ? null : e.preventDefault())} to="/">
+        <Link onClick={(e) => (saveCredentials() ? null : e.preventDefault())} to="/chat">
           <Button className={classes.button}>Register</Button>
         </Link>
       </Container>

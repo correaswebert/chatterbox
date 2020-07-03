@@ -127,8 +127,12 @@ function saveGroup(info) {
   });
 }
 
-const Chat = ({ socket, chatId, name, phone }) => {
+const GroupChat = ({ socket, chatId }) => {
   const classes = useStyles();
+
+  // user's essential details
+  const phone = localForage.getItem("phone");
+  const name = localForage.getItem("name");
 
   const date = new Date();
 
@@ -352,4 +356,4 @@ const Chat = ({ socket, chatId, name, phone }) => {
   );
 };
 
-export default Chat;
+export default GroupChat;

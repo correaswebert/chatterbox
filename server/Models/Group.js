@@ -2,27 +2,14 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const GroupSchema = new Schema({
-  group_name: {
-    type: String,
-    required: true,
-  },
-  // group_avatar: {
-  //     type: Buffer,
-  // },
-  group_creator: {
-    type: Number, // phone number
-    required: true,
-  },
-  time_created: {
-    type: Number,
-    required: true,
-  },
-  admins: {
-    type: Object,
-  },
-  participants: {
-    type: Object,
-  },
+  name: String,
+  // avatar: Buffer,
+  creator: Number, // phone number
+  time_created: Number,
+
+  // BUG: we have to define the Array as Person Schema...
+  admins: Array,
+  participants: Array,
 });
 
-module.exports = mongoose.model("meetings", GroupSchema);
+module.exports = mongoose.model("group", GroupSchema);

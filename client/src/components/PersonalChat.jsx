@@ -28,8 +28,6 @@ import DoneAllIcon from "@material-ui/icons/DoneAll";
 import defaultDP from "../images/defaultDP.svg";
 import { FixedSizeList } from "react-window";
 
-// import * as utils from "../utils/socketClient";
-
 const useStyles = makeStyles((theme) => ({
   chatInfo: {
     width: "70vw",
@@ -85,64 +83,30 @@ const useStyles = makeStyles((theme) => ({
 
 // stores the message in the array referred by phone or groupId
 function storeMessage(message) {
-  const chatId = message.group ? message.groupId : message.phone;
+  const chatId = message.group ? message.groupId : message.fromPhone;
   localForage
     .getItem(chatId)
     .then((currMessages) => localForage.setItem(chatId, [...currMessages, message]))
     .catch((err) => console.log(err));
 }
 
-function saveGroup(info) {
-  // save group id to array of user's groups
-  localForage
-    .getItem("chats")
-    .then((groups) => localForage.setItem("chats", [...groups, info.groupId]));
-
-  // save the group info
-  localForage.setItem(info.groupId, info);
-
-  // add two basic notifications
-  storeMessage({
-    fromPhone: 0,
-    fromName: "admin",
-    toPhone: number,
-    groupId: info.groupId,
-    type: "notification",
-    payload: `${info.creator.name} created the group`,
-    time: info.timeCreated,
-    incoming: true,
-    group: true,
-  });
-
-  storeMessage({
-    fromPhone: 0,
-    fromName: "admin",
-    toPhone: number,
-    groupId: info.groupId,
-    type: "notification",
-    payload: "You were added to the group",
-    time: info.timeCreated,
-    incoming: true,
-    group: true,
-  });
-}
-
-const Chat = ({ socket, chatId, name, phone }) => {
+const PersonalChat = ({ socket, chatId, friend }) => {
   const classes = useStyles();
+
+  // user's essential details
+  const phone = localForage.getItem("phone");
+  const name = localForage.getItem("name");
 
   const date = new Date();
 
   // current message written or file selected
-  const [payload, setPayload] = useState("");
+  const [payload, setPayload] = useState();
 
   // history of messages, stored in DB
   const [messages, setMessages] = useState(localForage.getItem(chatId));
 
   useEffect(() => {
-    // user has been added to a group
-    socket.on("added to group", (groupInfo) => saveGroup(groupInfo));
-
-    socket.on("incoming group message", (message) => {
+    socket.on("incoming personal message", (message) => {
       // for current session
       setMessages((messages) => [...messages, message]);
 
@@ -154,51 +118,48 @@ const Chat = ({ socket, chatId, name, phone }) => {
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
-      socket.broadcast
-        .to(message.groupId)
-        .emit("received group message", { user: phone, time: message.time });
+      socket
+        .to(friend.toPhone)
+        .emit("received personal message", { toPhone: phone, time: message.time });
+    });
+
+    socket.on("delivered personal message", ({ toPhone, time }) => {
+      // convert single ticks (sent from our side)
+      // to double ticks (received by friend)
+      // for each message keep a `delivered: boolean` on client-side
     });
   }, []);
-
-  socket.on("notify", ({ type, user }) => {});
-
-  const exitGroup = (groupId) => () => {
-    socket.emit("leave group", { groupId, phone: phone });
-    // remove group info from local DB
-    // render a blank screen now by redirecting...
-  };
 
   const sendMessage = (event) => {
     event.preventDefault();
 
-    setPayload(document.getElementById("message-input").value);
-    console.log("Payload: " + document.getElementById("message-input").value);
+    // setPayload(document.getElementById("message-input").value);
 
-    if (payload) {
-      const message = {
-        fromPhone: phone,
-        // fromName:    // sender's (your) name
-        // toPhone      // in case of personal messages
-        // groupId:     // in case of group messages
-        type: "text",
-        payload: message,
-        time: date.getTime(),
-        incoming: false,
-        // group:
-      };
+    // // DEBUG
+    // console.log("Payload: " + document.getElementById("message-input").value);
 
-      if (group) {
-        socket.emit("send group message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
-      } else {
-        socket.emit("send personal message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
+    if (!payload) return;
+
+    const message = {
+      fromPhone: phone,
+      fromName: name,
+      toPhone: friend.phone,
+      type: "text",
+      payload: payload,
+      // payload: document.getElementById("message-input").value,
+      time: date.getTime(),
+      incoming: false,
+      group: false,
+    };
+
+    socket.emit("send personal message", message, ({ error }) => {
+      if (error) {
+        alert(error);
       }
-    }
+    });
+
+    storeMessage(message);
+    setMessage("");
   };
 
   const formatTime = (time) => {
@@ -306,18 +267,17 @@ const Chat = ({ socket, chatId, name, phone }) => {
         className={classes.textBox}
         placeholder="Type a message..."
         inputProps={{ "aria-label": "type a message" }}
+        value={message}
+        onChange={({ target: { value } }) => setMessage(value)}
       />
       {/* 
-        value={message}
         onChange={(event) => setMessage(event.target.value)}
-          onKeyPress={(event) => {
-            if (event.key === "Enter") {
-              console.log(message);
-              return sendMessage(event);
-            }
-          }}
-        setMessage(event.target.value);
-        onChange={({ target: { value } }) => setMessage(value)}
+        onKeyPress={(event) => {
+          if (event.key === "Enter") {
+            console.log(message);
+            return sendMessage(event);
+          }
+        }}
          /> */}
 
       <IconButton className={classes.iconButton} aria-label="attach">
@@ -339,17 +299,12 @@ const Chat = ({ socket, chatId, name, phone }) => {
   );
 
   return (
-    // personal phone number is stored in localStorage for verifying if user registered
-    !localStorage.getItem("phone") ? (
-      <Redirect to="/register" />
-    ) : (
-      <div className={classes.root}>
-        <ChatInfo displayName={"placeholder"} />
-        <ChatBox messages={messages} />
-        <MessageInput />
-      </div>
-    )
+    <div className={classes.root}>
+      <ChatInfo displayName={"placeholder"} />
+      <ChatBox messages={messages} />
+      <MessageInput />
+    </div>
   );
 };
 
-export default Chat;
+export default PersonalChat;

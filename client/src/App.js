@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Register from "./pages/Register";
 import NewChat from "./pages/NewChat";
 import CreateGroup from "./pages/CreateGroup";
+import checkRegistered from "./utils/checkRegistered";
 
 /* 
 go to homepage initially, and try to grab the phone number (or some userId)
@@ -13,7 +14,7 @@ registration page
 function App() {
   return (
     <Router>
-      <Route exact path="/" component={Home} />
+      <Route exact path="/" component={checkRegistered} />
       <Route exact path="/chat" component={Home} />
 
       <Route exact path="/new-chat" component={NewChat} />
