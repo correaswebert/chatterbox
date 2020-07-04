@@ -57,10 +57,13 @@ const useStyles = makeStyles((theme) => ({
 const CreateGroup = () => {
   const classes = useStyles();
 
+  const [name, setName] = useState();
+  const [phone, setPhone] = useState();
+
   const saveCredentials = () => {
     const groupInfo = {
-      name: name,
-      phone: phone,
+      name,
+      phone,
       // avatar: avatar,
     };
 

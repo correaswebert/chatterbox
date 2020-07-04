@@ -47,24 +47,21 @@ interface Message {
 const users: number[] = []
 
 function getSocketFromPhone(phone: number): string {
-    // from the temporary database, get the socket.id of the phone number
-    return null
+    return PhoneSocket.findOne({ phone }).socket_id
 }
 
-function getPhoneFromSocket(socketid: string): number {
-    // from the temporary database, get the phone number of the socket.id
-    return null
+function getPhoneFromSocket(socket_id: string): number {
+    return PhoneSocket.findOne({ socket_id }).phone
 }
 
 function createPhoneSocketRelation(phone: number, socket_id: string) {
     const phone_socket = new PhoneSocket({
         phone, socket_id
     });
-
     phone_socket.save();
 }
-function deletePhoneSocketRelation(phone: number, socketid: string) {
-    // in the temporary database, add these as a pair
+function deletePhoneSocketRelation(phone: number, socket_id: string) {
+    PhoneSocket.deleteOne({ phone, socket_id });
 }
 
 function checkPendingMessages(phone: number): Message[] {
@@ -110,7 +107,7 @@ function SocketHandler(io: SocketIO.Server) {
                 // receiver is offline, add to his pending messages stash
                 addToPendingMessages(message, toPhone)
             } else {
-                socket.to(sid).emit("incoming personal message", { ...message, incoming: true });
+                io.to(sid).emit("incoming personal message", { ...message, incoming: true });
                 callback();
             }
         });

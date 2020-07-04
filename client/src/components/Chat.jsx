@@ -92,7 +92,7 @@ function storeMessage(message) {
     .catch((err) => console.log(err));
 }
 
-function saveGroup(info) {
+function saveGroup(info, phone) {
   // save group id to array of user's groups
   localForage
     .getItem("chats")
@@ -105,7 +105,7 @@ function saveGroup(info) {
   storeMessage({
     fromPhone: 0,
     fromName: "admin",
-    toPhone: number,
+    toPhone: phone,
     groupId: info.groupId,
     type: "notification",
     payload: `${info.creator.name} created the group`,
@@ -117,7 +117,7 @@ function saveGroup(info) {
   storeMessage({
     fromPhone: 0,
     fromName: "admin",
-    toPhone: number,
+    toPhone: phone,
     groupId: info.groupId,
     type: "notification",
     payload: "You were added to the group",
@@ -136,31 +136,32 @@ const Chat = ({ socket, chatId, name, phone }) => {
   const [payload, setPayload] = useState("");
 
   // history of messages, stored in DB
-  const [messages, setMessages] = useState(localForage.getItem(chatId));
+  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState(localForage.getItem(chatId));
 
-  useEffect(() => {
-    // user has been added to a group
-    socket.on("added to group", (groupInfo) => saveGroup(groupInfo));
+  // useEffect(() => {
+  //   // user has been added to a group
+  //   socket.on("added to group", (groupInfo) => saveGroup(groupInfo, phone));
 
-    socket.on("incoming group message", (message) => {
-      // for current session
-      setMessages((messages) => [...messages, message]);
+  //   socket.on("incoming group message", (message) => {
+  //     // for current session
+  //     setMessages((messages) => [...messages, message]);
 
-      // for persistent history
-      storeMessage(message);
+  //     // for persistent history
+  //     storeMessage(message);
 
-      // DEBUG
-      // console.log(messages);
+  //     // DEBUG
+  //     // console.log(messages);
 
-      // send confirmation that message is received
-      // if user wants, then this can be turned off
-      socket.broadcast
-        .to(message.groupId)
-        .emit("received group message", { user: phone, time: message.time });
-    });
-  }, []);
+  //     // send confirmation that message is received
+  //     // if user wants, then this can be turned off
+  //     socket.broadcast
+  //       .to(message.groupId)
+  //       .emit("received group message", { user: phone, time: message.time });
+  //   });
+  // }, []);
 
-  socket.on("notify", ({ type, user }) => {});
+  // socket.on("notify", ({ type, user }) => {});
 
   const exitGroup = (groupId) => () => {
     socket.emit("leave group", { groupId, phone: phone });
@@ -171,8 +172,10 @@ const Chat = ({ socket, chatId, name, phone }) => {
   const sendMessage = (event) => {
     event.preventDefault();
 
-    setPayload(document.getElementById("message-input").value);
-    console.log("Payload: " + document.getElementById("message-input").value);
+    // setPayload(document.getElementById("message-input").value);
+    // console.log("Payload: " + document.getElementById("message-input").value);
+    console.log("Payload: " + payload);
+    setPayload("");
 
     if (payload) {
       const message = {
@@ -181,23 +184,24 @@ const Chat = ({ socket, chatId, name, phone }) => {
         // toPhone      // in case of personal messages
         // groupId:     // in case of group messages
         type: "text",
-        payload: message,
+        payload: payload,
         time: date.getTime(),
         incoming: false,
         // group:
       };
 
-      if (group) {
-        socket.emit("send group message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
-      } else {
-        socket.emit("send personal message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
-      }
+      // if (group) {
+      // if (true) {
+      //   socket.emit("send group message", message, () => {
+      //     storeMessage(message);
+      //     setPayload("");
+      //   });
+      // } else {
+      //   socket.emit("send personal message", message, () => {
+      //     storeMessage(message);
+      //     setPayload("");
+      //   });
+      // }
     }
   };
 
@@ -251,7 +255,7 @@ const Chat = ({ socket, chatId, name, phone }) => {
         <Toolbar>
           <Avatar alt="DP" src={displayPicture || defaultDP} />
           <Typography variant="h6" className={classes.title}>
-            {displayName}
+            {displayName + " " + chatId}
           </Typography>
 
           {/* display icons only for group chat */}
@@ -264,23 +268,21 @@ const Chat = ({ socket, chatId, name, phone }) => {
 
   const ChatBox = ({ messages }) =>
     messages.map((message, i) => {
-      const { user, time, payload, type, incoming } = message;
-      // console.log(message);
+      const { user, time, payload, type } = message;
 
       return (
         <Paper key={i} className={classes.chatBox}>
           {/* this is a notification */}
-          <div className={classes.name}>{user !== "admin" ? user : null}</div>
+          <div>{user !== "admin" ? user : ""}</div>
 
           <Typography>
             {/* show message if text otherwise show download icon (with filename) */}
-            {type === "text" || type === "notification" ? payload : type}
-            {/* {if(true) return null} */}
+            {type === "text" ? payload : type}
           </Typography>
 
           <div className={classes.timeStamp}>
-            {user !== "admin" ? formatTime(time) : null}
-            {incoming ? null : <DoneIcon />}
+            {time}
+            {/* double ticks icon (only outgoing messages) */}
           </div>
         </Paper>
       );
@@ -302,14 +304,23 @@ const Chat = ({ socket, chatId, name, phone }) => {
       </IconButton>
 
       <InputBase
+        type="text"
         id="message-input"
         className={classes.textBox}
         placeholder="Type a message..."
         inputProps={{ "aria-label": "type a message" }}
+        value={payload}
+        onChange={(event) => setPayload(event.target.value)}
       />
+
+      {/* <Input
+        placeholder="Phone number"
+        className={classes.input}
+        type="text"
+        onChange={(event) => setPhone(event.target.value)}
+      /> */}
       {/* 
         value={message}
-        onChange={(event) => setMessage(event.target.value)}
           onKeyPress={(event) => {
             if (event.key === "Enter") {
               console.log(message);
@@ -344,7 +355,7 @@ const Chat = ({ socket, chatId, name, phone }) => {
       <Redirect to="/register" />
     ) : (
       <div className={classes.root}>
-        <ChatInfo displayName={"placeholder"} />
+        <ChatInfo displayName={name} />
         <ChatBox messages={messages} />
         <MessageInput />
       </div>

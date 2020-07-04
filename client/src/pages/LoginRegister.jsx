@@ -55,7 +55,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Register = ({ login }) => {
+const LoginRegister = ({ login }) => {
   const classes = useStyles();
 
   const [name, setName] = useState("");
@@ -94,7 +94,7 @@ const Register = ({ login }) => {
   return (
     <div className={classes.outerContainer}>
       <Container className={classes.innerContainer}>
-        <h1 className={classes.heading}>Register</h1>
+        <h1 className={classes.heading}>{login ? "Login" : "Register"}</h1>
         <div>
           <Input
             placeholder="Name"
@@ -108,7 +108,7 @@ const Register = ({ login }) => {
           <Input
             placeholder="Phone number"
             className={classes.input}
-            type="number"
+            type="text"
             onChange={(event) => setPhone(event.target.value)}
           />
         </div>
@@ -133,11 +133,11 @@ const Register = ({ login }) => {
         </div> */}
 
         <Link onClick={(e) => (saveCredentials() ? null : e.preventDefault())} to="/chat">
-          <Button className={classes.button}>Register</Button>
+          <Button className={classes.button}>{login ? "Login" : "Register"}</Button>
         </Link>
       </Container>
     </div>
   );
 };
 
-export default Register;
+export default LoginRegister;

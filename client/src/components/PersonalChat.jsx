@@ -174,20 +174,19 @@ const PersonalChat = ({ socket, chatId, friend }) => {
 
   // https://github.com/bvaughn/react-window
   // some links in the README for lazy loading the list data too!
-  function renderRow(props) {
-    const { index, style, message } = props;
-    const { user, time, payload, type, incoming } = message;
+  function renderRow({ index, style, message }) {
+    const { fromName, time, payload, type, incoming } = message;
     // console.log(message);
 
     return (
-      <ListItem button style={style} key={index}>
+      <ListItem key={index} style={style} button>
         <Paper className={classes.chatBox}>
           {/* this is a notification */}
-          <div className={classes.name}>{user !== "admin" ? user : null}</div>
+          <div className={classes.name}>{fromName}</div>
 
           <Typography>
             {/* show message if text otherwise show download icon (with filename) */}
-            {type === "text" || type === "notification" ? payload : type}
+            {type === "text" ? payload : type}
             {/* {if(true) return null} */}
           </Typography>
 
@@ -200,12 +199,6 @@ const PersonalChat = ({ socket, chatId, friend }) => {
     );
   }
 
-  renderRow.propTypes = {
-    index: PropTypes.number.isRequired,
-    style: PropTypes.object.isRequired,
-    message: PropTypes.object.isRequired,
-  };
-
   const ChatInfo = ({ displayName, displayPicture }) => (
     <div className={classes.chatInfo}>
       <AppBar position="static">
@@ -214,10 +207,6 @@ const PersonalChat = ({ socket, chatId, friend }) => {
           <Typography variant="h6" className={classes.title}>
             {displayName}
           </Typography>
-
-          {/* display icons only for group chat */}
-          <PersonAddIcon />
-          <ExitToAppIcon onClick={exitGroup(null)} />
         </Toolbar>
       </AppBar>
     </div>

@@ -8,7 +8,6 @@ import {
   ListItemAvatar,
   Avatar,
   Divider,
-  // Fab,
 } from "@material-ui/core";
 import PersonAddIcon from "@material-ui/icons/PersonAdd";
 import GroupAddIcon from "@material-ui/icons/GroupAdd";
@@ -26,41 +25,37 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Conversations = ({ chats }) => {
+const Conversations = ({ chats, setChatId }) => {
   const classes = useStyles();
-
-  // BUG: add functionality here
-  const newChat = () => {};
-  const newGroup = () => {};
 
   return (
     <>
       <List className={classes.root}>
-        <ListItem alignItems="flex-start">
-          <Link to="/new-chat">
+        <Link to="/new-chat">
+          <ListItem alignItems="flex-start">
             <ListItemAvatar>
               <PersonAddIcon />
             </ListItemAvatar>
-            {"New Chat"}
-          </Link>
-        </ListItem>
+            <ListItemText primary="New Chat" />
+          </ListItem>
+        </Link>
         <Divider />
 
-        <ListItem alignItems="flex-start">
-          <Link to="/new-group">
+        <Link to="/new-group">
+          <ListItem alignItems="flex-start">
             <ListItemAvatar>
               <GroupAddIcon />
             </ListItemAvatar>
-            {"New Group"}
-          </Link>
-        </ListItem>
+            <ListItemText primary="New Group" />
+          </ListItem>
+        </Link>
         <Divider />
 
         {chats.map((chat, index) => {
           const { name, image, extract } = chat;
           return (
             <div key={index}>
-              <ListItem alignItems="flex-start">
+              <ListItem alignItems="flex-start" button>
                 <ListItemAvatar>
                   <Avatar alt={name} src={image || logo} />
                 </ListItemAvatar>
@@ -71,10 +66,6 @@ const Conversations = ({ chats }) => {
           );
         })}
       </List>
-
-      {/* <Fab aria-label="Add" className={classes.fab} color="primary">
-        <AddIcon />
-      </Fab> */}
     </>
   );
 };

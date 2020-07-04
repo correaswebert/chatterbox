@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Group = require("../Models/Group");
 
-router.post("/create-group", (req, res) => {
+router.post("/create", (req, res) => {
   const { name, avatar, timeCreated, creator, participants } = res.body;
 
   const group = new Group({

@@ -1,10 +1,12 @@
 const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
+const mongoose = require("mongoose");
 const cors = require("cors"); // useful once app is deployed
+require("dotenv").config();
 
 const { addUser, removeUser, getUser } = require("./users");
-const router = require("./router");
+// const router = require("./router");
 
 const app = express();
 const server = http.createServer(app);
@@ -12,14 +14,15 @@ const io = socketio(server);
 
 app.use(cors());
 app.use(express.json());
-app.use(router);
+// app.use(router);
 
-// active users in group
-const users = [];
-
-// a temporary relationship between a phone number and socket.id
-// created on the join event, and deleted on the disconnect event
-const phone2socket = [];
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+  })
+  .then(() => console.log("Mongodb connected"))
+  .catch((err) => console.log(err));
 
 // socket is created
 io.on("connect", (socket) => {
@@ -90,5 +93,13 @@ io.on("connect", (socket) => {
   // });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server has started @ PORT ${PORT}`));
+const NewUserRouter = require("./Routes/NewUser");
+app.use("/api", NewUserRouter);
+
+const GroupRouter = require("./Routes/Group");
+const { Server } = require("tls");
+app.use("/api/group", GroupRouter);
+
+server.listen(process.env.PORT || 500, () =>
+  console.log("Sever is running on port " + process.env.PORT)
+);
