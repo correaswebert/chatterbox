@@ -4,9 +4,8 @@ import { makeStyles } from "@material-ui/core/styles";
 import Conversations from "../components/Conversations";
 import Chat from "../components/Chat";
 import localForage from "localforage";
-// import PersonalChat from "../components/PersonalChat";
+import PersonalChat from "../components/PersonalChat";
 // import GroupChat from "../components/GroupChat";
-// import { Redirect } from "react-router-dom";
 
 const useStyles = makeStyles({
   root: {
@@ -33,18 +32,30 @@ const chats = [
   { id: "1379", name: "Mike Ross", extract: "..." },
 ];
 
-const Home = ({ phone, name }) => {
+const Home = () => {
   const classes = useStyles();
 
-  const [chatId, setChatId] = useState();
-  // const chats = localForage.getItem("chats")
+  const [chatId, setChatId] = useState(0);
+  const [phone, setPhone] = useState(0);
+  const [name, setName] = useState("");
+
   const socket = io("http://127:0.0.1:5000");
+
+  // get user's personal details
+  localForage
+    .getItem("phone")
+    .then((p) => setPhone(p))
+    .catch((err) => console.log(err));
+  localForage
+    .getItem("name")
+    .then((n) => setName(n))
+    .catch((err) => console.log(err));
 
   // user's essential details
   const userDetails = {
-    socket_id: socket,
-    phone: localForage.getItem("phone"),
-    name: localForage.getItem("name"),
+    socket,
+    phone,
+    name,
   };
 
   // Notify server you are online and check for pending messages
@@ -66,8 +77,8 @@ const Home = ({ phone, name }) => {
 
   return (
     <div className={classes.root}>
-      <Conversations chats={chats} handler={setChatId} />
-      <Chat {...userDetails} chatId={chatId} /> {/* also need to pass chatId */}
+      <Conversations chats={chats} setChatId={setChatId} />
+      <PersonalChat {...userDetails} chatId={chatId} />
     </div>
   );
 };

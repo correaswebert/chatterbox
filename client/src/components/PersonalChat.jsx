@@ -82,20 +82,20 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 // stores the message in the array referred by phone or groupId
-function storeMessage(message) {
+async function storeMessage(message) {
   const chatId = message.group ? message.groupId : message.fromPhone;
-  localForage
-    .getItem(chatId)
-    .then((currMessages) => localForage.setItem(chatId, [...currMessages, message]))
-    .catch((err) => console.log(err));
+
+  try {
+    const currMessages = await localForage.getItem(chatId);
+    localForage.setItem(chatId, [...currMessages, message]);
+  } catch (err) {
+    if (err instanceof TypeError) localForage.setItem(chatId, [message]);
+    else console.log(err);
+  }
 }
 
-const PersonalChat = ({ socket, chatId, friend }) => {
+const PersonalChat = ({ socket, phone, name, chatId, friend }) => {
   const classes = useStyles();
-
-  // user's essential details
-  const phone = localForage.getItem("phone");
-  const name = localForage.getItem("name");
 
   const date = new Date();
 
@@ -103,47 +103,46 @@ const PersonalChat = ({ socket, chatId, friend }) => {
   const [payload, setPayload] = useState();
 
   // history of messages, stored in DB
-  const [messages, setMessages] = useState(localForage.getItem(chatId));
+  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState(localForage.getItem(chatId));
 
-  useEffect(() => {
-    socket.on("incoming personal message", (message) => {
-      // for current session
-      setMessages((messages) => [...messages, message]);
+  // useEffect(() => {
+  //   socket.on("incoming personal message", (message) => {
+  //     // for current session
+  //     setMessages((messages) => [...messages, message]);
 
-      // for persistent history
-      storeMessage(message);
+  //     // for persistent history
+  //     storeMessage(message);
 
-      // DEBUG
-      // console.log(messages);
+  //     // DEBUG
+  //     // console.log(messages);
 
-      // send confirmation that message is received
-      // if user wants, then this can be turned off
-      socket
-        .to(friend.toPhone)
-        .emit("received personal message", { toPhone: phone, time: message.time });
-    });
+  //     // send confirmation that message is received
+  //     // if user wants, then this can be turned off
+  //     socket
+  //       .to(friend.toPhone)
+  //       .emit("received personal message", { toPhone: phone, time: message.time });
+  //   });
 
-    socket.on("delivered personal message", ({ toPhone, time }) => {
-      // convert single ticks (sent from our side)
-      // to double ticks (received by friend)
-      // for each message keep a `delivered: boolean` on client-side
-    });
-  }, []);
+  //   socket.on("delivered personal message", ({ toPhone, time }) => {
+  //     // convert single ticks (sent from our side)
+  //     // to double ticks (received by friend)
+  //     // for each message keep a `delivered: boolean` on client-side
+  //   });
+  // }, []);
 
   const sendMessage = (event) => {
     event.preventDefault();
 
-    // setPayload(document.getElementById("message-input").value);
-
-    // // DEBUG
-    // console.log("Payload: " + document.getElementById("message-input").value);
+    // DEBUG
+    localForage.getItem(chatId).then((chats) => console.log(chats));
 
     if (!payload) return;
 
     const message = {
       fromPhone: phone,
       fromName: name,
-      toPhone: friend.phone,
+      toPhone: 9820978323,
       type: "text",
       payload: payload,
       // payload: document.getElementById("message-input").value,
@@ -159,7 +158,7 @@ const PersonalChat = ({ socket, chatId, friend }) => {
     });
 
     storeMessage(message);
-    setMessage("");
+    setPayload("");
   };
 
   const formatTime = (time) => {
@@ -256,8 +255,8 @@ const PersonalChat = ({ socket, chatId, friend }) => {
         className={classes.textBox}
         placeholder="Type a message..."
         inputProps={{ "aria-label": "type a message" }}
-        value={message}
-        onChange={({ target: { value } }) => setMessage(value)}
+        value={payload}
+        onChange={({ target: { value } }) => setPayload(value)}
       />
       {/* 
         onChange={(event) => setMessage(event.target.value)}
@@ -289,7 +288,7 @@ const PersonalChat = ({ socket, chatId, friend }) => {
 
   return (
     <div className={classes.root}>
-      <ChatInfo displayName={"placeholder"} />
+      <ChatInfo displayName={name} />
       <ChatBox messages={messages} />
       <MessageInput />
     </div>

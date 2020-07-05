@@ -55,7 +55,7 @@ const Conversations = ({ chats, setChatId }) => {
           const { name, image, extract } = chat;
           return (
             <div key={index}>
-              <ListItem alignItems="flex-start" button>
+              <ListItem alignItems="flex-start" button onClick={() => setChatId(chat.id)}>
                 <ListItemAvatar>
                   <Avatar alt={name} src={image || logo} />
                 </ListItemAvatar>
