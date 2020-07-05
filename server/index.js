@@ -6,7 +6,6 @@ const cors = require("cors"); // useful once app is deployed
 require("dotenv").config();
 
 const { addUser, removeUser, getUser } = require("./users");
-// const router = require("./router");
 
 const app = express();
 const server = http.createServer(app);
@@ -14,7 +13,6 @@ const io = socketio(server);
 
 app.use(cors());
 app.use(express.json());
-// app.use(router);
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -97,7 +95,6 @@ const NewUserRouter = require("./Routes/NewUser");
 app.use("/api", NewUserRouter);
 
 const GroupRouter = require("./Routes/Group");
-const { Server } = require("tls");
 app.use("/api/group", GroupRouter);
 
 server.listen(process.env.PORT || 500, () =>

@@ -28,9 +28,9 @@ function storeMessage(message) {
 }
 
 const chats = [
-  { id: "", name: "swebert correa", extract: "..." },
-  { id: "", name: "swebert correa", extract: "..." },
-  { id: "", name: "swebert correa", extract: "..." },
+  { id: "1234", name: "swebert correa", extract: "..." },
+  { id: "1248", name: "Chandler Bing", extract: "..." },
+  { id: "1379", name: "Mike Ross", extract: "..." },
 ];
 
 const Home = ({ phone, name }) => {

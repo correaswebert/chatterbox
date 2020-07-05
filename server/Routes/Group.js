@@ -1,32 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const Group = require("../Models/Group");
+const GroupHandler = require("../Database/Group");
 
 router.post("/create", (req, res) => {
-  const { name, avatar, timeCreated, creator, participants } = res.body;
+  const { group_id, message, success } = GroupHandler.createGroup(
+    req.body.groupInformation
+  );
+  res.status(200).send({ group_id, message, success });
+});
 
-  const group = new Group({
-    name: name,
-    // avatar:avatar,
-    creator: creator,
-    time_created: time,
-    admins: [creator],
-    participants: participants,
-  });
-
-  group.save((err, g) => {
-    if (err)
-      return res.status(200).send({
-        error: err,
-        success: false,
-      });
-
-    res.status(200).send({
-      groupId: g._id,
-      message: "Group successfully created",
-      success: true,
-    });
-  });
+router.post("/add", (req, res) => {
+  const { message, success } = GroupHandler.addUser(req.body.updateInformation);
+  res.status(200).send({ message, success });
 });
 
 module.exports = router;
