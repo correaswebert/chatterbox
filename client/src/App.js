@@ -2,9 +2,9 @@ import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import LoginRegister from "./pages/LoginRegister";
-// import NewChat from "./pages/NewChat";
+import NewChat from "./pages/NewChat";
 import CreateGroup from "./pages/CreateGroup";
-import checkRegistered from "./utils/checkRegistered";
+import CheckRegistered from "./utils/CheckRegistered";
 
 /* 
 go to homepage initially, and try to grab the phone number (or some userId)
@@ -14,10 +14,10 @@ registration page
 function App() {
   return (
     <Router>
-      <Route exact path="/" component={checkRegistered} />
+      <Route exact path="/" component={CheckRegistered} />
       <Route exact path="/chat" component={Home} />
 
-      {/* <Route exact path="/new-chat" component={NewChat} /> */}
+      <Route exact path="/new-chat" component={NewChat} />
       <Route exact path="/new-group" component={CreateGroup} />
 
       <Route

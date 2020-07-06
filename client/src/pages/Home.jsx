@@ -2,10 +2,9 @@ import React, { useState } from "react";
 import io from "socket.io-client";
 import { makeStyles } from "@material-ui/core/styles";
 import Conversations from "../components/Conversations";
-import Chat from "../components/Chat";
 import localForage from "localforage";
 import PersonalChat from "../components/PersonalChat";
-// import GroupChat from "../components/GroupChat";
+import GroupChat from "../components/GroupChat";
 
 const useStyles = makeStyles({
   root: {
@@ -27,7 +26,7 @@ function storeMessage(message) {
 }
 
 const chats = [
-  { id: "1234", name: "swebert correa", extract: "..." },
+  { id: "9702275586", name: "swebert correa", extract: "..." },
   { id: "1248", name: "Chandler Bing", extract: "..." },
   { id: "1379", name: "Mike Ross", extract: "..." },
 ];
@@ -40,6 +39,12 @@ const Home = () => {
   const [name, setName] = useState("");
 
   const socket = io("http://127:0.0.1:5000");
+
+  let currChats = [];
+  localForage
+    .getItem("chats")
+    .then((chats) => (currChats = chats))
+    .catch(() => (currChats = []));
 
   // get user's personal details
   localForage
@@ -75,10 +80,21 @@ const Home = () => {
     });
   });
 
+  function renderChat() {
+    if (currChats.personal.find(({ id }) => id === chatId)) {
+      return <PersonalChat {...userDetails} chatId={chatId} />;
+    } else if (currChats.group.find(({ id }) => id === chatId)) {
+      return <GroupChat {...userDetails} chatId={chatId} />;
+    } else {
+      return <></>;
+    }
+  }
+
   return (
     <div className={classes.root}>
       <Conversations chats={chats} setChatId={setChatId} />
-      <PersonalChat {...userDetails} chatId={chatId} />
+      {/* <PersonalChat {...userDetails} chatId={chatId} /> */}
+      {renderChat()}
     </div>
   );
 };

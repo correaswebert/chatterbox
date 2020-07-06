@@ -84,12 +84,15 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 // stores the message in the array referred by phone or groupId
-function storeMessage(message) {
-  const chatId = message.group ? message.groupId : message.phone;
-  localForage
-    .getItem(chatId)
-    .then((currMessages) => localForage.setItem(chatId, [...currMessages, message]))
-    .catch((err) => console.log(err));
+async function storeMessage(message, messages) {
+  const chatId = message.group ? message.groupId : message.fromPhone;
+
+  try {
+    localForage.setItem(chatId, [...messages, message]);
+  } catch (err) {
+    if (err instanceof TypeError) localForage.setItem(chatId, [message]);
+    else console.log(err);
+  }
 }
 
 function saveGroup(info) {
@@ -105,7 +108,6 @@ function saveGroup(info) {
   storeMessage({
     fromPhone: 0,
     fromName: "admin",
-    toPhone: number,
     groupId: info.groupId,
     type: "notification",
     payload: `${info.creator.name} created the group`,
@@ -117,7 +119,6 @@ function saveGroup(info) {
   storeMessage({
     fromPhone: 0,
     fromName: "admin",
-    toPhone: number,
     groupId: info.groupId,
     type: "notification",
     payload: "You were added to the group",
@@ -127,12 +128,8 @@ function saveGroup(info) {
   });
 }
 
-const GroupChat = ({ socket, chatId }) => {
+const GroupChat = ({ socket, phone, name, chatId }) => {
   const classes = useStyles();
-
-  // user's essential details
-  const phone = localForage.getItem("phone");
-  const name = localForage.getItem("name");
 
   const date = new Date();
 
@@ -140,9 +137,14 @@ const GroupChat = ({ socket, chatId }) => {
   const [payload, setPayload] = useState("");
 
   // history of messages, stored in DB
-  const [messages, setMessages] = useState(localForage.getItem(chatId));
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
+    localForage
+      .getItem(chatId)
+      .then((messageHistory) => setMessages(messageHistory ? messageHistory : []))
+      .catch(() => setMessages([]));
+
     // user has been added to a group
     socket.on("added to group", (groupInfo) => saveGroup(groupInfo));
 
@@ -154,7 +156,7 @@ const GroupChat = ({ socket, chatId }) => {
       storeMessage(message);
 
       // DEBUG
-      // console.log(messages);
+      console.log("Messages: " + messages);
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
@@ -162,9 +164,9 @@ const GroupChat = ({ socket, chatId }) => {
         .to(message.groupId)
         .emit("received group message", { user: phone, time: message.time });
     });
-  }, []);
 
-  socket.on("notify", ({ type, user }) => {});
+    socket.on("notify", ({ type, user }) => {});
+  }, []);
 
   const exitGroup = (groupId) => () => {
     socket.emit("leave group", { groupId, phone: phone });
@@ -175,34 +177,31 @@ const GroupChat = ({ socket, chatId }) => {
   const sendMessage = (event) => {
     event.preventDefault();
 
-    setPayload(document.getElementById("message-input").value);
-    console.log("Payload: " + document.getElementById("message-input").value);
+    // // DEBUG
+    // localForage.getItem(chatId).then((chats) => console.log(chats));
 
-    if (payload) {
-      const message = {
-        fromPhone: phone,
-        // fromName:    // sender's (your) name
-        // toPhone      // in case of personal messages
-        // groupId:     // in case of group messages
-        type: "text",
-        payload: message,
-        time: date.getTime(),
-        incoming: false,
-        // group:
-      };
+    if (!payload) return;
 
-      if (group) {
-        socket.emit("send group message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
-      } else {
-        socket.emit("send personal message", message, () => {
-          storeMessage(message);
-          setMessage("");
-        });
+    const message = {
+      fromPhone: phone,
+      fromName: name,
+      toPhone: 9820978323,
+      type: "text",
+      payload: payload,
+      // payload: document.getElementById("message-input").value,
+      time: date.getTime(),
+      incoming: false,
+      group: false,
+    };
+
+    socket.emit("send group message", message, (error) => {
+      if (error) {
+        alert(error);
       }
-    }
+    });
+
+    storeMessage(message, messages);
+    setPayload("");
   };
 
   const formatTime = (time) => {
