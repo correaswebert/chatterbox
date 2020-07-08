@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { Link } from "react-router-dom";
 // import queryString from "query-string";
 import io from "socket.io-client";
 import { makeStyles } from "@material-ui/core/styles";
@@ -156,9 +157,10 @@ const Chat = ({ location }) => {
             {displayName}
           </Typography>
 
-          {/* display icons only for group chat */}
           <PersonAddIcon style={{ marginRight: "0.5em" }} />
-          <ExitToAppIcon />
+          <Link to="/new">
+            <ExitToAppIcon />
+          </Link>
         </Toolbar>
       </AppBar>
     </div>
@@ -223,7 +225,7 @@ const Chat = ({ location }) => {
 
   return (
     <div className={classes.root}>
-      <ChatInfo displayName={chatId.name ?? chatId} />
+      <ChatInfo displayName={chatId} />
       <ChatBox messages={messages} />
       <MessageBox />
     </div>
