@@ -58,6 +58,15 @@ const Register = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
+  function saveCreds() {
+    if (!name || !phone) return true;
+
+    localStorage.setItem("name", name);
+    localStorage.setItem("phone", phone);
+
+    return false;
+  }
+
   return (
     <div className={classes.outerContainer}>
       <Container className={classes.innerContainer}>
@@ -85,8 +94,8 @@ const Register = () => {
         {/* convert this into a POST request from GET request */}
         <Link
           // BUG: instead of null, update localStorage with provided info
-          onClick={(e) => (!name || !phone ? e.preventDefault() : null)}
-          to={`/chat?name=${name}&phone=${phone}`}
+          onClick={(e) => (saveCreds() ? e.preventDefault() : null)}
+          to="/chat"
         >
           <Button className={classes.button} type="submit">
             Register

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { makeStyles } from "@material-ui/core/styles";
 import {
   List,
@@ -35,20 +36,26 @@ const Conversations = ({ chats }) => {
   return (
     <>
       <List className={classes.root}>
-        <ListItem alignItems="flex-start" button onClick={newChat}>
-          <ListItemAvatar>
-            <PersonAddIcon />
-          </ListItemAvatar>
-          {"New Chat"}
-        </ListItem>
+        <Link to="/new">
+          <ListItem alignItems="flex-start" button onClick={newChat}>
+            <ListItemAvatar>
+              <PersonAddIcon />
+            </ListItemAvatar>
+            <ListItemText primary="New Chat" />
+          </ListItem>
+        </Link>
         <Divider />
-        <ListItem alignItems="flex-start" button onClick={newGroup}>
-          <ListItemAvatar>
-            <GroupAddIcon />
-          </ListItemAvatar>
-          {"New Group"}
-        </ListItem>
+
+        <Link to="/new">
+          <ListItem alignItems="flex-start" button onClick={newGroup}>
+            <ListItemAvatar>
+              <GroupAddIcon />
+            </ListItemAvatar>
+            <ListItemText primary="New Group" />
+          </ListItem>
+        </Link>
         <Divider />
+
         {chats.map((chat, index) => {
           const { name, image, extract } = chat;
           return (

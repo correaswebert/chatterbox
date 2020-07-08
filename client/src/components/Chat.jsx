@@ -65,44 +65,44 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-let socket; // will be initialised every time we change the connection (group or chat)
+const socket = io("localhost:5000");
+
 const Chat = ({ location }) => {
   const classes = useStyles();
 
-  const [name, setName] = useState(""); // if single person
-  const [chat, setChat] = useState(""); // if group chat
+  const name = localStorage.getItem("name");
+  const phone = localStorage.getItem("phone");
+
+  const group = JSON.parse(localStorage.getItem("group"));
+  const chatId = localStorage.getItem("chatId");
+
   const [users, setUsers] = useState(""); // if group chat
   const date = new Date();
 
   const [message, setMessage] = useState(""); // current one being written
   const [messages, setMessages] = useState([]); // history of messages, stored in localStorage
-  const ENDPOINT = "localhost:5000"; // where the server is connected
-
-  let socket = useRef();
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
-  useEffect(() => {
-    // in case of single person, the room name will be replaced by other party's name
-    // const { name, chat } = queryString.parse(location.search);
-    const name = "Swebert" + date.getTime();
-    const chat = "Swebert";
+  useEffect(
+    () => {
+      // in case of single person, the room name will be replaced by other party's name
+      // const { name, chat } = queryString.parse(location.search);
 
-    socket.current = io(ENDPOINT);
-
-    setChat("Swebert");
-    setName("Swebert");
-
-    // user has joined a room
-    socket.current.emit("join", { name, chat, time: date.getMinutes() }, (error) => {
-      if (error) {
-        alert(error);
-      }
-    });
-  }, [ENDPOINT /* , location.search */]);
+      // user has joined a room
+      socket.emit("join", { name, phone, chatId, time: date.getMinutes() }, (error) => {
+        if (error) {
+          alert(error);
+        }
+      });
+    },
+    [
+      /* , location.search */
+    ]
+  );
 
   useEffect(() => {
-    socket.current.on("incoming message", (message) => {
+    socket.on("incoming message", (message) => {
       setMessages((messages) => [...messages, message]);
 
       // DEBUG
@@ -113,11 +113,11 @@ const Chat = ({ location }) => {
 
       // send confirmation that message is received
       // if user wants, then this can be turned off
-      socket.current.emit("received message", message.time);
+      socket.emit("received message", message.time);
     });
 
     // in case of group chat, add the new user to the local DB
-    socket.current.on("roomData", ({ users }) => {
+    socket.on("roomData", ({ users }) => {
       setUsers(users);
     });
   }, []);
@@ -126,7 +126,7 @@ const Chat = ({ location }) => {
     event.preventDefault();
 
     if (message) {
-      socket.current.emit(
+      socket.emit(
         "send message",
         { type: "text", payload: message, time: date.getTime() },
         () => setMessage("")
@@ -162,7 +162,7 @@ const Chat = ({ location }) => {
 
           <Typography>
             {/* show message if text otherwise show download icon (with filename) */}
-            {type === "text" ? payload : type}
+            {type === "text" || type === "notification" ? payload : type}
           </Typography>
 
           <div className={classes.timeStamp}>

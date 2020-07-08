@@ -22,6 +22,7 @@ const removeUser = (id) => {
   if (index !== -1) return users.splice(index, 1)[0];
 };
 
+// finds user info by socket.id
 const getUser = (id) => users.find((user) => user.id === id);
 
 const getUsersInChat = (chat) => users.filter((user) => user.chat === chat);

@@ -11,11 +11,16 @@ const server = http.createServer(app);
 const io = socketio(server);
 
 app.use(cors());
+app.use(express.json());
 app.use(router);
 
 // socket is created
 io.on("connect", (socket) => {
-  socket.on("join", ({ name, chat, time }, callback) => {
+  console.log("server socket created");
+
+  socket.on("join", ({ name, phone, chatId: chat, time }, callback) => {
+    console.log("Chat: " + chat);
+
     const { error, user } = addUser({ id: socket.id, name, chat });
 
     if (error) return callback(error);
@@ -50,6 +55,7 @@ io.on("connect", (socket) => {
 
   socket.on("send message", (message, callback) => {
     const user = getUser(socket.id);
+    console.dir(user);
 
     io.to(user.chat).emit("incoming message", { ...message, user: user.name });
 
@@ -61,7 +67,7 @@ io.on("connect", (socket) => {
 
     if (user) {
       io.to(user.chat).emit("incoming message", {
-        user: "Admin",
+        user: "admin",
         type: "notification",
         payload: `${user.name} has left the chat`,
       });
