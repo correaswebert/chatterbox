@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import { makeStyles } from "@material-ui/core/styles";
 import { Paper, Input, Button, Container } from "@material-ui/core";
 
@@ -55,14 +55,19 @@ const useStyles = makeStyles((theme) => ({
 
 const Register = () => {
   const classes = useStyles();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(localStorage.getItem("name"));
+  const [phone, setPhone] = useState(localStorage.getItem("phone"));
+  const [saved, setSaved] = useState(name && phone);
+
+  localStorage.removeItem("chatId");
 
   function saveCreds() {
     if (!name || !phone) return true;
 
     localStorage.setItem("name", name);
     localStorage.setItem("phone", phone);
+
+    setSaved(true);
 
     return false;
   }
@@ -89,18 +94,16 @@ const Register = () => {
           />
         </div>
 
-        <div>{/* input button to get image */}</div>
-
-        {/* convert this into a POST request from GET request */}
-        <Link
-          // BUG: instead of null, update localStorage with provided info
+        {/* <Link to="/chat"> */}
+        <Button
+          className={classes.button}
           onClick={(e) => (saveCreds() ? e.preventDefault() : null)}
-          to="/chat"
+          type="submit"
         >
-          <Button className={classes.button} type="submit">
-            Register
-          </Button>
-        </Link>
+          Register
+        </Button>
+        {/* </Link> */}
+        {saved ? <Redirect to="/chat" /> : <></>}
       </Container>
     </div>
   );

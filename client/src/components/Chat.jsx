@@ -89,12 +89,13 @@ const Chat = ({ location }) => {
       // in case of single person, the room name will be replaced by other party's name
       // const { name, chat } = queryString.parse(location.search);
 
-      // user has joined a room
-      socket.emit("join", { name, phone, chatId, time: date.getMinutes() }, (error) => {
-        if (error) {
-          alert(error);
-        }
-      });
+      if (chatId) {
+        socket.emit("join", { name, phone, chatId, group }, (error) => {
+          if (error) {
+            alert(error);
+          }
+        });
+      }
     },
     [
       /* , location.search */

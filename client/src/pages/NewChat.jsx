@@ -77,18 +77,10 @@ const useStyles = makeStyles((theme) => ({
 
 const NewChat = () => {
   const classes = useStyles();
+
   const [chatId, setChatId] = useState("");
   const [group, setGroup] = useState(false);
-
   const [saved, setSaved] = useState(false);
-
-  //   function saveCreds() {
-  //     if (!chatId) return true;
-
-  //     localStorage.setItem("chatId", chatId);
-
-  //     return false;
-  //   }
 
   const saveCreds = () => {
     if (saved) return false; // no error

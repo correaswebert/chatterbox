@@ -18,37 +18,45 @@ app.use(router);
 io.on("connect", (socket) => {
   console.log("server socket created");
 
-  socket.on("join", ({ name, phone, chatId: chat, time }, callback) => {
-    console.log("Chat: " + chat);
+  socket.on("join", ({ name, phone, chatId: chat, group }, callback) => {
+    console.log("Chat: ");
+    console.log(phone + chat);
 
-    const { error, user } = addUser({ id: socket.id, name, chat });
+    const { error, user } = addUser({
+      id: socket.id,
+      name,
+      phone,
+      chat: group ? chat : phone > chat ? phone + chat : chat + phone,
+    });
 
     if (error) return callback(error);
 
     socket.join(user.chat);
-    console.log(`${name} has joined @ ${time}`);
+    console.log(`${name} has joined`);
 
-    // notify the user
-    socket.emit("incoming message", {
-      user: "admin",
-      type: "notification",
-      payload: `You have joined the chat`,
-    });
+    if (group) {
+      // notify the user
+      socket.emit("incoming message", {
+        user: "admin",
+        type: "notification",
+        payload: `You have joined the chat`,
+      });
 
-    // notify the other participants of the group
-    socket.broadcast.to(user.chat).emit("incoming message", {
-      user: "admin",
-      type: "notification",
-      payload: `${user.name} has joined the chat`,
-    });
+      // notify the other participants of the group
+      socket.broadcast.to(user.chat).emit("incoming message", {
+        user: "admin",
+        type: "notification",
+        payload: `${user.name} has joined the chat`,
+      });
 
-    // send the updated participant list
-    // FIX: instead of sending updated list, client-side should directly add the username using above notification
-    // the list should only be sent to the current user...
-    io.to(user.chat).emit("roomData", {
-      chat: user.chat,
-      users: getUsersInChat(user.chat),
-    });
+      // send the updated participant list
+      // FIX: instead of sending updated list, client-side should directly add the username using above notification
+      // the list should only be sent to the current user...
+      io.to(user.chat).emit("roomData", {
+        chat: user.chat,
+        users: getUsersInChat(user.chat),
+      });
+    }
 
     callback();
   });

@@ -10,13 +10,14 @@ import {
   Divider,
   // Fab,
 } from "@material-ui/core";
-import PersonAddIcon from "@material-ui/icons/PersonAdd";
-import GroupAddIcon from "@material-ui/icons/GroupAdd";
+// import PersonAddIcon from "@material-ui/icons/PersonAdd";
+import AddCircleIcon from "@material-ui/icons/AddCircle";
 import logo from "../logo.svg";
 
 const useStyles = makeStyles((theme) => ({
   root: {
     width: "30vw",
+    height: "100vh",
     backgroundColor: theme.palette.background.paper,
   },
   fab: {
@@ -29,29 +30,15 @@ const useStyles = makeStyles((theme) => ({
 const Conversations = ({ chats }) => {
   const classes = useStyles();
 
-  // BUG: add functionality here
-  const newChat = () => {};
-  const newGroup = () => {};
-
   return (
     <>
       <List className={classes.root}>
         <Link to="/new">
-          <ListItem alignItems="flex-start" button onClick={newChat}>
+          <ListItem alignItems="flex-start" button>
             <ListItemAvatar>
-              <PersonAddIcon />
+              <AddCircleIcon />
             </ListItemAvatar>
             <ListItemText primary="New Chat" />
-          </ListItem>
-        </Link>
-        <Divider />
-
-        <Link to="/new">
-          <ListItem alignItems="flex-start" button onClick={newGroup}>
-            <ListItemAvatar>
-              <GroupAddIcon />
-            </ListItemAvatar>
-            <ListItemText primary="New Group" />
           </ListItem>
         </Link>
         <Divider />
@@ -73,7 +60,7 @@ const Conversations = ({ chats }) => {
       </List>
 
       {/* <Fab aria-label="Add" className={classes.fab} color="primary">
-        <AddIcon />
+        <AddCircleIcon />
       </Fab> */}
     </>
   );
