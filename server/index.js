@@ -19,9 +19,6 @@ io.on("connect", (socket) => {
   console.log("server socket created");
 
   socket.on("join", ({ name, phone, chatId: chat, group }, callback) => {
-    console.log("Chat: ");
-    console.log(phone + chat);
-
     const { error, user } = addUser({
       id: socket.id,
       name,
@@ -55,6 +52,13 @@ io.on("connect", (socket) => {
       io.to(user.chat).emit("roomData", {
         chat: user.chat,
         users: getUsersInChat(user.chat),
+      });
+    } else {
+      // notify the other participant
+      socket.broadcast.to(user.chat).emit("incoming message", {
+        user: "admin",
+        type: "notification",
+        payload: `${user.name} is online`,
       });
     }
 

@@ -18,7 +18,8 @@ const useStyles = makeStyles((theme) => ({
   root: {
     width: "30vw",
     height: "100vh",
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: "#ffffff",
+    // borderRight: "2px solid white",
   },
   fab: {
     position: "absolute",
@@ -27,13 +28,13 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const Conversations = ({ chats }) => {
+const Conversations = ({ chats, setChatId }) => {
   const classes = useStyles();
 
   return (
     <>
       <List className={classes.root}>
-        <Link to="/new">
+        <Link to="/new" style={{ textDecoration: "none" }}>
           <ListItem alignItems="flex-start" button>
             <ListItemAvatar>
               <AddCircleIcon />
@@ -44,10 +45,11 @@ const Conversations = ({ chats }) => {
         <Divider />
 
         {chats.map((chat, index) => {
-          const { name, image, extract } = chat;
+          const { name, image, extract, id } = chat;
           return (
             <div key={index}>
               <ListItem alignItems="flex-start">
+                {/* <ListItem alignItems="flex-start" button onClick={setChatId(id)}> */}
                 <ListItemAvatar>
                   <Avatar alt={name} src={image || logo} />
                 </ListItemAvatar>

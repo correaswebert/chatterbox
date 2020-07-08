@@ -33,6 +33,10 @@ const useStyles = makeStyles((theme) => ({
     marginLeft: theme.spacing(1),
     flexGrow: 1,
   },
+  name: {
+    marginBottom: "0.5em",
+    fontWeight: 700,
+  },
 
   chatBox: {
     maxWidth: "30em",
@@ -58,6 +62,9 @@ const useStyles = makeStyles((theme) => ({
   },
   timeStamp: {
     float: "right",
+    marginTop: "-0.25em",
+    marginRight: "-0.75em",
+    color: "#a9a9a9",
   },
   divider: {
     height: 28,
@@ -84,23 +91,18 @@ const Chat = ({ location }) => {
 
   // this is used for group chat
   // can also be used to have a accept notification... if user accepts, then establish a conversation
-  useEffect(
-    () => {
-      // in case of single person, the room name will be replaced by other party's name
-      // const { name, chat } = queryString.parse(location.search);
+  useEffect(() => {
+    // in case of single person, the room name will be replaced by other party's name
+    // const { name, chat } = queryString.parse(location.search);
 
-      if (chatId) {
-        socket.emit("join", { name, phone, chatId, group }, (error) => {
-          if (error) {
-            alert(error);
-          }
-        });
-      }
-    },
-    [
-      /* , location.search */
-    ]
-  );
+    if (chatId) {
+      socket.emit("join", { name, phone, chatId, group }, (error) => {
+        if (error) {
+          alert(error);
+        }
+      });
+    }
+  }, []);
 
   useEffect(() => {
     socket.on("incoming message", (message) => {
@@ -135,6 +137,16 @@ const Chat = ({ location }) => {
     }
   };
 
+  const formatTime = (time) => {
+    // console.log("Time: " + time);
+    time %= 86400000;
+    let ss = Math.floor(time / 1000);
+    let mm = Math.floor(ss / 60);
+    let hh = Math.floor(mm / 24);
+
+    return `${hh % 24}:${mm % 60}:${ss % 60}`;
+  };
+
   const ChatInfo = ({ displayName, displayPicture }) => (
     <div className={classes.chatInfo}>
       <AppBar position="static">
@@ -145,7 +157,7 @@ const Chat = ({ location }) => {
           </Typography>
 
           {/* display icons only for group chat */}
-          <PersonAddIcon />
+          <PersonAddIcon style={{ marginRight: "0.5em" }} />
           <ExitToAppIcon />
         </Toolbar>
       </AppBar>
@@ -159,7 +171,7 @@ const Chat = ({ location }) => {
       return (
         <Paper key={i} className={classes.chatBox}>
           {/* this is a notification */}
-          <div>{user !== "admin" ? user : ""}</div>
+          <div className={classes.name}>{user !== "admin" ? user : ""}</div>
 
           <Typography>
             {/* show message if text otherwise show download icon (with filename) */}
@@ -167,7 +179,7 @@ const Chat = ({ location }) => {
           </Typography>
 
           <div className={classes.timeStamp}>
-            {time}
+            {time ? formatTime(time) : ""}
             {/* double ticks icon (only outgoing messages) */}
           </div>
         </Paper>
@@ -211,7 +223,7 @@ const Chat = ({ location }) => {
 
   return (
     <div className={classes.root}>
-      <ChatInfo displayName={"placeholder"} />
+      <ChatInfo displayName={chatId.name ?? chatId} />
       <ChatBox messages={messages} />
       <MessageBox />
     </div>
